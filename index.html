@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>STANSPACE ♡</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 :root{
 --bg:#f8f6fc;--white:#fff;--text:#30283b;--muted:#93889e;
@@ -21,6 +22,7 @@ button{cursor:pointer;border:0}
 .btn{border-radius:12px;padding:10px 16px;background:linear-gradient(135deg,#e995ba,#a58ad6);color:white;font-weight:bold}
 .btn.secondary{background:var(--soft);color:#715b9c}
 .btn.danger{background:#fff0f2;color:#c05d80}
+.btn:disabled{opacity:.6;cursor:wait}
 .topbar{height:68px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 5%;position:sticky;top:0;z-index:10}
 .layout{max-width:1200px;margin:25px auto;padding:0 15px;display:grid;grid-template-columns:205px minmax(0,1fr) 220px;gap:20px}
 .sidebar,.rightbar{position:sticky;top:88px;align-self:start}
@@ -34,7 +36,7 @@ button{cursor:pointer;border:0}
 .mini-community:hover{background:#faf7fd}
 .dot,.tile-icon{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#f8d8e6,#e2d8fa);display:grid;place-items:center;color:#795d9f;font-size:11px;font-weight:bold}
 .main{min-width:0}
-.page-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 17px}
+.page-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 17px;gap:8px}
 .page-head h1{font-size:24px;margin:0}
 .sub{color:var(--muted);font-size:12px;margin-top:5px}
 .card{padding:17px;margin-bottom:15px}
@@ -49,7 +51,8 @@ button{cursor:pointer;border:0}
 .photo-preview img{display:block;max-width:100%;max-height:300px;object-fit:contain;border-radius:13px;border:1px solid var(--border)}
 .remove-photo{position:absolute;top:7px;right:7px;background:#30283bcc;color:white;border-radius:50%;width:27px;height:27px}
 .post-head{display:flex;align-items:center;gap:10px}
-.post-name{font-weight:bold;font-size:13px}
+.post-name{font-weight:bold;font-size:13px;cursor:pointer}
+.post-name:hover{color:#a34f7c}
 .post-meta{font-size:11px;color:var(--muted);margin-top:3px}
 .post-text{font-size:14px;line-height:1.6;margin:14px 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .post-image{width:100%;max-height:560px;object-fit:contain;border-radius:13px;margin:4px 0 12px;background:#f8f6fc}
@@ -69,13 +72,15 @@ button{cursor:pointer;border:0}
 .search,.field{width:100%;border:1px solid var(--border);border-radius:11px;padding:11px 12px;outline:none;margin:7px 0 12px}
 .profile-cover{height:120px;background:linear-gradient(110deg,#f7d6e5,#d9cef1);border-radius:17px;margin-bottom:-40px}
 .profile-card{padding:0 18px 18px}
-.profile-top{display:flex;align-items:end;justify-content:space-between}
+.profile-top{display:flex;align-items:end;justify-content:space-between;gap:10px}
 .profile-top .avatar{width:80px;height:80px;border:5px solid white;font-size:22px}
 .profile-name{font-size:21px;font-weight:900;margin:10px 0 2px}
 .profile-bio{color:var(--muted);font-size:13px}
-.stats{display:flex;gap:22px;margin:15px 0}
+.stats{display:flex;gap:22px;margin:15px 0;flex-wrap:wrap}
 .stats b{font-size:15px}
 .stats span{display:block;font-size:10px;color:var(--muted)}
+.stat-button{background:transparent;padding:0;text-align:left;color:var(--text)}
+.stat-button:hover b{color:#a34f7c}
 .modal-back{position:fixed;inset:0;background:#241a2d88;z-index:20;display:grid;place-items:center;padding:15px}
 .modal{background:white;border-radius:20px;width:min(560px,100%);max-height:92vh;overflow:auto;padding:22px}
 .modal h2{margin:0 0 6px}
@@ -89,7 +94,7 @@ button{cursor:pointer;border:0}
 .comment-row{display:flex;gap:7px;margin-top:8px}
 .comment-row input{flex:1;min-width:0;border:1px solid var(--border);border-radius:9px;padding:8px}
 .settings-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:12px}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#33283f;color:white;padding:11px 17px;border-radius:30px;font-size:12px;z-index:50}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#33283f;color:white;padding:11px 17px;border-radius:30px;font-size:12px;z-index:50;max-width:90%;text-align:center}
 .mobile-nav{display:none}
 .auth-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 20% 20%,#f8dce9 0,transparent 35%),radial-gradient(circle at 80% 80%,#e8e0f7 0,transparent 38%),var(--bg)}
 .auth-card{width:min(480px,100%);background:white;border:1px solid var(--border);border-radius:22px;padding:28px;box-shadow:var(--shadow)}
@@ -97,6 +102,9 @@ button{cursor:pointer;border:0}
 .auth-tabs button{flex:1;padding:11px;border-radius:10px;background:#f5f0f8;color:#806b92}
 .auth-tabs button.active{background:#f7dfeb;color:#a34f7c}
 .loading{text-align:center;padding:60px 15px;color:var(--muted)}
+.clickable{cursor:pointer}
+.auth-link{display:block;text-align:center;margin:14px 0 0;color:#9874bc;font-size:12px;font-weight:bold;text-decoration:none;cursor:pointer}
+.auth-link:hover{text-decoration:underline}
 @media(max-width:900px){.layout{grid-template-columns:180px minmax(0,1fr)}.rightbar{display:none}}
 @media(max-width:640px){
 .topbar{height:60px;padding:0 13px}
@@ -110,6 +118,7 @@ button{cursor:pointer;border:0}
 }
 </style>
 </head>
+
 <body>
 <div id="app"><div class="loading">Opening STANSPACE ♡ ...</div></div>
 <div id="modalRoot"></div>
@@ -142,11 +151,13 @@ const FANDOMS=[
 ];
 
 let session=null,currentUser=null,profile=null;
-let myFandoms=[],posts=[],likes=[],comments=[];
-let currentPage="home",activeFandom=null;
+let myFandoms=[],posts=[],likes=[],comments=[],relationships=[];
+let currentPage="home",activeFandom=null,viewedProfile=null;
 let selectedPhoto=null,previewUrl=null;
+let recoveryMode=false;
 
 const $=id=>document.getElementById(id);
+
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({
 "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[c]));
@@ -172,6 +183,7 @@ return [...document.querySelectorAll("#fandomOptions input:checked")].map(x=>x.v
 
 // AUTHENTICATION
 function showAuth(mode="login",message=""){
+recoveryMode=false;
 $("app").innerHTML=`
 <div class="auth-wrap"><div class="auth-card">
 <div class="brand">STANSPACE<span> ♡</span></div>
@@ -202,12 +214,101 @@ ${FANDOMS.map(([f,g])=>`<label class="fandom-option">
 <input class="field" id="email" type="email" required placeholder="you@example.com">
 <label class="label">Password</label>
 <input class="field" id="password" type="password" minlength="8" required placeholder="At least 8 characters">
-<button class="btn" style="width:100%" type="submit">${mode==="login"?"Log in ♡":"Create my account ♡"}</button>
+${mode==="login"?`<a class="auth-link" onclick="showForgotPassword()">Forgot password?</a>`:""}
+<button class="btn" style="width:100%;margin-top:14px" type="submit">${mode==="login"?"Log in ♡":"Create my account ♡"}</button>
 </form>
 <div class="notice">Please use a valid email address. If email confirmation is enabled, check your inbox after registering.</div>
 </div></div>`;
 $("authForm").onsubmit=e=>authenticate(e,mode);
 }
+
+// FORGOT PASSWORD
+function showForgotPassword(message=""){
+recoveryMode=false;
+$("app").innerHTML=`
+<div class="auth-wrap"><div class="auth-card">
+<div class="brand">STANSPACE<span> ♡</span></div>
+<h2 style="margin-top:22px">Forgot your password?</h2>
+<p style="color:var(--muted);font-size:13px;line-height:1.6">
+No worries! Enter the email address connected to your account. We'll send you a link to reset your password.
+</p>
+${message?`<div class="notice">${esc(message)}</div>`:""}
+<form id="forgotForm">
+<label class="label">Email address</label>
+<input class="field" id="forgotEmail" type="email" required placeholder="you@example.com">
+<button class="btn" id="resetEmailButton" style="width:100%;margin-top:10px" type="submit">Send reset link ♡</button>
+</form>
+<a class="auth-link" onclick="showAuth('login')">← Back to login</a>
+</div></div>`;
+$("forgotForm").onsubmit=sendResetEmail;
+}
+
+async function sendResetEmail(e){
+e.preventDefault();
+const email=$("forgotEmail").value.trim();
+const button=$("resetEmailButton");
+button.disabled=true;
+button.textContent="Sending...";
+const {error}=await db.auth.resetPasswordForEmail(email,{
+redirectTo:window.location.origin
+});
+if(error){
+toast("Could not send email: "+error.message);
+button.disabled=false;
+button.textContent="Send reset link ♡";
+return;
+}
+showForgotPassword("If an account exists with this email, a password-reset link has been sent. Please check your inbox and spam folder.");
+}
+
+function showResetPassword(message=""){
+recoveryMode=true;
+$("app").innerHTML=`
+<div class="auth-wrap"><div class="auth-card">
+<div class="brand">STANSPACE<span> ♡</span></div>
+<h2 style="margin-top:22px">Create a new password ♡</h2>
+<p style="color:var(--muted);font-size:13px;line-height:1.6">
+You're almost back! Choose a new password for your STANSPACE account.
+</p>
+${message?`<div class="notice">${esc(message)}</div>`:""}
+<form id="newPasswordForm">
+<label class="label">New password</label>
+<input class="field" id="newPassword" type="password" minlength="8" required placeholder="At least 8 characters">
+<label class="label">Confirm new password</label>
+<input class="field" id="confirmPassword" type="password" minlength="8" required placeholder="Enter your new password again">
+<button class="btn" id="savePasswordButton" style="width:100%;margin-top:10px" type="submit">Save new password ♡</button>
+</form>
+</div></div>`;
+$("newPasswordForm").onsubmit=saveNewPassword;
+}
+
+async function saveNewPassword(e){
+e.preventDefault();
+const password=$("newPassword").value;
+const confirmPassword=$("confirmPassword").value;
+if(password.length<8){
+toast("Your password must be at least 8 characters.");
+return;
+}
+if(password!==confirmPassword){
+toast("Your passwords do not match.");
+return;
+}
+const button=$("savePasswordButton");
+button.disabled=true;
+button.textContent="Saving...";
+const {error}=await db.auth.updateUser({password});
+if(error){
+toast("Could not update password: "+error.message);
+button.disabled=false;
+button.textContent="Save new password ♡";
+return;
+}
+recoveryMode=false;
+toast("Password changed successfully! ♡");
+await loadApp();
+}
+
 function filterFandoms(){
 const q=$("fandomSearch").value.toLowerCase();
 document.querySelectorAll("#fandomOptions label").forEach(el=>{
@@ -225,7 +326,9 @@ const username=$("username").value.trim().toLowerCase();
 const display_name=$("displayName").value.trim();
 const country=$("country").value.trim();
 const fandoms=selectedFandomNames();
-if(!/^[a-z0-9_]{3,20}$/.test(username)){toast("Username must be 3–20 characters: letters, numbers or underscores.");return}
+if(!/^[a-z0-9_]{3,20}$/.test(username)){
+toast("Username must be 3–20 characters: letters, numbers or underscores.");return;
+}
 if(!display_name){toast("Please enter a display name.");return}
 if(!fandoms.length){toast("Choose at least one fandom.");return}
 result=await db.auth.signUp({email,password,options:{data:{username,display_name,country,fandoms}}});
@@ -246,14 +349,16 @@ currentUser=user;
 const {data:p,error:profileError}=await db.from("profiles").select("*").eq("id",user.id).single();
 if(profileError){toast("Could not load your profile: "+profileError.message);return}
 profile=p;
-const {data:members,error:memberError}=await db.from("user_fandoms").select("fandom_id,fandoms(name)").eq("user_id",user.id);
+
+const {data:members,error:memberError}=await db.from("user_fandoms")
+.select("fandom_id,fandoms(name)").eq("user_id",user.id);
 if(memberError){toast("Could not load your fandoms.");return}
 myFandoms=(members||[]).map(x=>x.fandoms?.name).filter(Boolean);
-await loadPosts();
+
+await Promise.all([loadPosts(),loadRelationships()]);
 render();
 }
 
-// Load posts and create temporary display links for private images
 async function loadPosts(){
 const {data,error}=await db.from("posts")
 .select("*,profiles(username,display_name,avatar_url),fandoms(name)")
@@ -278,6 +383,16 @@ db.from("comments").select("id,post_id,user_id,content,created_at,profiles(usern
 likes=l.data||[];
 comments=c.data||[];
 }else{likes=[];comments=[]}
+}
+
+async function loadRelationships(){
+const {data,error}=await db.from("follows").select("follower_id,following_id,created_at");
+if(error){
+toast("Could not load follows: "+error.message);
+relationships=[];
+return;
+}
+relationships=data||[];
 }
 
 // NAVIGATION
@@ -321,6 +436,7 @@ showPage(currentPage);
 }
 function showPage(page){
 currentPage=page;
+viewedProfile=null;
 if(!$("pageContent"))return;
 const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,profile:renderProfile,settings:renderSettings};
 (pages[page]||renderHome)();
@@ -334,19 +450,16 @@ function choosePhoto(input){
 const file=input.files?.[0];
 if(!file)return;
 if(!file.type.startsWith("image/")){
-toast("Please choose an image file.");
-input.value="";return;
+toast("Please choose an image file.");input.value="";return;
 }
 if(file.size>5*1024*1024){
-toast("Your photo must be smaller than 5 MB.");
-input.value="";return;
+toast("Your photo must be smaller than 5 MB.");input.value="";return;
 }
 if(previewUrl)URL.revokeObjectURL(previewUrl);
 selectedPhoto=file;
 previewUrl=URL.createObjectURL(file);
 const preview=$("photoPreview");
-preview.innerHTML=`<img src="${previewUrl}" alt="Photo preview">
-<button class="remove-photo" type="button" onclick="removePhoto()">×</button>`;
+preview.innerHTML=`<img src="${previewUrl}" alt="Photo preview"><button class="remove-photo" type="button" onclick="removePhoto()">×</button>`;
 preview.style.display="block";
 }
 function removePhoto(){
@@ -360,7 +473,7 @@ if(preview){preview.innerHTML="";preview.style.display="none"}
 }
 
 // POST COMPOSER
-function composer(){
+function composer(fandom=null){
 return `<div class="card">
 <div class="composer">${avatar(profile.display_name)}
 <div style="flex:1;min-width:0">
@@ -372,20 +485,17 @@ return `<div class="card">
 <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onchange="choosePhoto(this)">
 <span class="sub">Up to 5 MB</span>
 </div>
-<button class="btn" id="postButton" onclick="createPost()">Post ♡</button>
+<button class="btn" id="postButton" onclick="createPost(${fandom?`'${esc(fandom)}'`:"null"})">Post ♡</button>
 </div></div></div></div>`;
 }
 
-// Create a text post, photo post, or photo + caption post
 async function createPost(fandom=null){
 const content=$("postContent")?.value.trim()||"";
 const file=selectedPhoto;
 if(!content&&!file){toast("Write something or add a photo first!");return}
-
 const button=$("postButton");
 if(button){button.disabled=true;button.textContent="Posting..."}
 let imagePath=null;
-
 try{
 if(file){
 const extension=file.name.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
@@ -395,16 +505,20 @@ const {error:uploadError}=await db.storage.from("stanspace-images")
 if(uploadError)throw uploadError;
 }
 
+let fandomId=null;
+if(fandom){
+const {data:fandomRow,error:fandomError}=await db.from("fandoms").select("id").eq("name",fandom).single();
+if(fandomError)throw new Error("Could not find this fandom in the database: "+fandomError.message);
+fandomId=fandomRow.id;
+}
+
 const {error}=await db.from("posts").insert({
 user_id:currentUser.id,
 content:content,
 image_url:imagePath,
-fandom_id:null
+fandom_id:fandomId
 });
-if(error){
-if(imagePath)await db.storage.from("stanspace-images").remove([imagePath]);
-throw error;
-}
+if(error)throw error;
 
 removePhoto();
 toast("Your post is live ♡");
@@ -414,6 +528,7 @@ else if(currentPage==="profile")renderProfile();
 else renderHome();
 }catch(error){
 toast("Could not publish: "+error.message);
+if(imagePath)await db.storage.from("stanspace-images").remove([imagePath]);
 if(button){button.disabled=false;button.textContent="Post ♡"}
 }
 }
@@ -428,7 +543,7 @@ const postComments=comments.filter(c=>c.post_id===post.id);
 return `<article class="card">
 <div class="post-head">${avatar(author)}
 <div style="flex:1">
-<div class="post-name">${esc(author)}</div>
+<div class="post-name" onclick="openUserProfile('${post.user_id}')">${esc(author)}</div>
 <div class="post-meta">@${esc(username)} · ${formatDate(post.created_at)}</div>
 </div>
 ${fandom?`<span class="tag">${esc(fandom)}</span>`:""}
@@ -447,7 +562,7 @@ ${postComments.map(c=>`<div class="comment"><b>@${esc(c.profiles?.username||"fan
 <button class="btn" onclick="addComment('${post.id}')">Send</button>
 </div></div></article>`;
 }
-function toggleComments(id){$("comments-"+id).classList.toggle("hidden")}
+function toggleComments(id){$("comments-"+id)?.classList.toggle("hidden")}
 async function toggleLike(postId){
 const existing=likes.find(x=>x.post_id===postId&&x.user_id===currentUser.id);
 const result=existing?
@@ -457,7 +572,7 @@ if(result.error){toast(result.error.message);return}
 await loadPosts();refreshCurrentFeed();
 }
 async function addComment(postId){
-const input=$("comment-"+postId),content=input.value.trim();
+const input=$("comment-"+postId),content=input?.value.trim();
 if(!content)return;
 const {error}=await db.from("comments").insert({post_id:postId,user_id:currentUser.id,content});
 if(error){toast(error.message);return}
@@ -469,16 +584,12 @@ if(!confirm("Delete this post?"))return;
 const post=posts.find(p=>p.id===id);
 const {error}=await db.from("posts").delete().eq("id",id).eq("user_id",currentUser.id);
 if(error){toast(error.message);return}
-if(post?.image_url){
-const {error:removeError}=await db.storage.from("stanspace-images").remove([post.image_url]);
-if(removeError)console.warn("Photo cleanup failed:",removeError.message);
-}
+if(post?.image_url)await db.storage.from("stanspace-images").remove([post.image_url]);
 await loadPosts();refreshCurrentFeed();toast("Post deleted.");
 }
 function refreshCurrentFeed(){
 if(currentPage==="home")renderHome();
 else if(currentPage==="profile")renderProfile();
-else if(currentPage==="fandoms"&&activeFandom)renderCommunity(activeFandom);
 else if(currentPage==="community"&&activeFandom)renderCommunity(activeFandom);
 }
 
@@ -499,10 +610,9 @@ $("pageContent").innerHTML=`
 ${myFandoms.length?"":`<div class="card empty"><div class="big">♡</div><h3>No fandoms yet</h3><p>Find your people in Explore.</p></div>`}`;
 }
 function fandomTile(f,joined=false){
-const group=fandomName(f);
 return `<div class="community-tile" onclick="openFandom('${esc(f)}')" style="cursor:pointer">
 <div class="tile-icon">${esc(f.slice(0,2))}</div>
-<strong>${esc(f)}</strong><small>${esc(group)}</small>
+<strong>${esc(f)}</strong><small>${esc(fandomName(f))}</small>
 <div style="margin-top:10px"><span class="tag">${joined?"Joined ♡":"Explore"}</span></div></div>`;
 }
 function openFandom(f){activeFandom=f;currentPage="community";renderCommunity(f)}
@@ -513,7 +623,7 @@ $("pageContent").innerHTML=`
 <div class="community-hero"><span class="tag">K-POP COMMUNITY</span>
 <h2>${esc(f)} ♡</h2><p>${esc(group)} fans, this is your space.</p>
 <div style="margin-top:15px"><button class="btn ${isMember?"secondary":""}" onclick="toggleFandom('${esc(f)}')">${isMember?"Leave fandom":"Join fandom ♡"}</button></div></div>
-${isMember?composer():`<div class="card"><p>Join this fandom to participate in its community.</p></div>`}
+${isMember?composer(f):`<div class="card"><p>Join this fandom to participate in its community.</p></div>`}
 ${fandomPosts.length?fandomPosts.map(postCard).join(""):`<div class="card empty"><div class="big">♡</div><h3>It's quiet here!</h3><p>Community posts will appear here.</p></div>`}`;
 }
 async function toggleFandom(f){
@@ -531,9 +641,9 @@ if(error){toast(error.message);return}
 }
 const {data:members}=await db.from("user_fandoms").select("fandoms(name)").eq("user_id",currentUser.id);
 myFandoms=(members||[]).map(x=>x.fandoms?.name).filter(Boolean);
+toast(myFandoms.includes(f)?"Joined "+f+" ♡":"Left "+f);
 render();
 if(currentPage==="community")openFandom(f);
-toast(myFandoms.includes(f)?"Joined "+f+" ♡":"Left "+f);
 }
 
 // EXPLORE
@@ -550,24 +660,104 @@ const filtered=FANDOMS.filter(([f,g])=>(f+" "+g).toLowerCase().includes(q));
 $("exploreGrid").innerHTML=filtered.map(([f])=>fandomTile(f,myFandoms.includes(f))).join("");
 }
 
+// FOLLOWERS AND FOLLOWING
+function followerCount(userId){
+return relationships.filter(x=>x.following_id===userId).length;
+}
+function followingCount(userId){
+return relationships.filter(x=>x.follower_id===userId).length;
+}
+function amFollowing(userId){
+return relationships.some(x=>x.follower_id===currentUser.id&&x.following_id===userId);
+}
+async function openUserProfile(userId){
+if(userId===currentUser.id){
+viewedProfile=null;
+currentPage="profile";
+renderProfile();
+return;
+}
+const {data:p,error}=await db.from("profiles").select("*").eq("id",userId).single();
+if(error||!p){toast("Could not find this profile.");return}
+viewedProfile=p;
+currentPage="profile";
+renderProfile();
+}
+async function toggleFollow(userId){
+if(userId===currentUser.id)return;
+const following=amFollowing(userId);
+let result;
+if(following){
+result=await db.from("follows").delete()
+.eq("follower_id",currentUser.id).eq("following_id",userId);
+}else{
+result=await db.from("follows").insert({
+follower_id:currentUser.id,
+following_id:userId
+});
+}
+if(result.error){
+toast("Could not update follow: "+result.error.message);
+return;
+}
+await loadRelationships();
+toast(following?"Unfollowed.":"Following ♡");
+renderProfile();
+}
+async function showFollowList(userId,type){
+const isFollowers=type==="followers";
+const rows=relationships.filter(x=>isFollowers?x.following_id===userId:x.follower_id===userId);
+const ids=rows.map(x=>isFollowers?x.follower_id:x.following_id);
+if(!ids.length){
+$("modalRoot").innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal"><h2>${isFollowers?"Followers":"Following"}</h2><div class="empty">No ${type} yet ♡</div><button class="btn secondary" onclick="closeModal()">Close</button></div></div>`;
+return;
+}
+const {data:people,error}=await db.from("profiles").select("id,username,display_name").in("id",ids);
+if(error){toast("Could not load people: "+error.message);return}
+const ordered=ids.map(id=>people.find(p=>p.id===id)).filter(Boolean);
+$("modalRoot").innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">
+<h2>${isFollowers?"Followers":"Following"} ♡</h2>
+${ordered.map(p=>`<div class="settings-row">
+<div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="closeModal();openUserProfile('${p.id}')">
+${avatar(p.display_name)}<div><b>${esc(p.display_name||p.username)}</b><div class="sub">@${esc(p.username)}</div></div>
+</div></div>`).join("")}
+<button class="btn secondary" style="margin-top:12px" onclick="closeModal()">Close</button>
+</div></div>`;
+}
+
 // PROFILE
 function renderProfile(){
-const mine=posts.filter(p=>p.user_id===currentUser.id);
+const p=viewedProfile||profile;
+const own=!viewedProfile;
+const mine=posts.filter(post=>post.user_id===p.id);
+const followers=followerCount(p.id);
+const following=followingCount(p.id);
+const followingMe=own?false:amFollowing(p.id);
 $("pageContent").innerHTML=`
 <div class="card" style="padding:0;overflow:hidden">
-<div class="profile-cover"></div><div class="profile-card">
-<div class="profile-top">${avatar(profile.display_name)}
-<button class="btn secondary" onclick="editProfile()">Edit profile</button></div>
-<div class="profile-name">${esc(profile.display_name||profile.username)}</div>
-<div class="sub">@${esc(profile.username)} · ${esc(profile.country||"")}</div>
-<p class="profile-bio">${esc(profile.bio||"No bio yet. Add something about yourself ♡")}</p>
-<div class="stats"><div><b>${mine.length}</b><span>Posts</span></div><div><b>${myFandoms.length}</b><span>Fandoms</span></div></div>
-<div class="sub">MY FANDOMS</div>
-<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${myFandoms.map(f=>`<span class="tag">${esc(f)}</span>`).join("")}</div>
+<div class="profile-cover"></div>
+<div class="profile-card">
+<div class="profile-top">${avatar(p.display_name)}
+${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</button>`:
+`<button class="btn ${followingMe?"secondary":""}" onclick="toggleFollow('${p.id}')">${followingMe?"Following · Unfollow":"Follow ♡"}</button>`}
+</div>
+<div class="profile-name">${esc(p.display_name||p.username)}</div>
+<div class="sub">@${esc(p.username)} · ${esc(p.country||"")}</div>
+<p class="profile-bio">${esc(p.bio||"No bio yet. Add something about yourself ♡")}</p>
+<div class="stats">
+<div><b>${mine.length}</b><span>Posts</span></div>
+<button class="stat-button" onclick="showFollowList('${p.id}','followers')"><b>${followers}</b><span>Followers</span></button>
+<button class="stat-button" onclick="showFollowList('${p.id}','following')"><b>${following}</b><span>Following</span></button>
+${own?`<div><b>${myFandoms.length}</b><span>Fandoms</span></div>`:""}
+</div>
+${own?`<div class="sub">MY FANDOMS</div>
+<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${myFandoms.map(f=>`<span class="tag">${esc(f)}</span>`).join("")}</div>`:""}
 </div></div>
-<h3 style="font-size:16px">My posts</h3>
-${mine.length?mine.map(postCard).join(""):`<div class="card empty">You haven't posted anything yet ♡</div>`}`;
+<h3 style="font-size:16px">${own?"My posts":esc(p.display_name||p.username)+"'s posts"}</h3>
+${mine.length?mine.map(postCard).join(""):`<div class="card empty"><div class="big">♡</div><p>No posts yet.</p></div>`}`;
 }
+
+// EDIT PROFILE
 function editProfile(){
 $("modalRoot").innerHTML=`
 <div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">
@@ -581,11 +771,16 @@ $("modalRoot").innerHTML=`
 </div></div></div>`;
 }
 async function saveProfile(){
-const updates={display_name:$("editDisplay").value.trim(),country:$("editCountry").value.trim(),bio:$("editBio").value.trim()};
+const updates={
+display_name:$("editDisplay").value.trim(),
+country:$("editCountry").value.trim(),
+bio:$("editBio").value.trim()
+};
 if(!updates.display_name){toast("Display name cannot be empty.");return}
 const {error}=await db.from("profiles").update(updates).eq("id",currentUser.id);
 if(error){toast(error.message);return}
-profile={...profile,...updates};closeModal();renderProfile();toast("Profile updated ♡");
+profile={...profile,...updates};
+closeModal();renderProfile();toast("Profile updated ♡");
 }
 
 // SETTINGS
@@ -598,6 +793,8 @@ $("pageContent").innerHTML=`
 <div class="settings-row"><span>Account created</span><b>${formatDate(currentUser.created_at)}</b></div></div>
 <div class="card"><h3 style="margin-top:0">Your STANSPACE</h3>
 <div class="settings-row"><span>Joined fandoms</span><b>${myFandoms.length}</b></div>
+<div class="settings-row"><span>Followers</span><b>${followerCount(currentUser.id)}</b></div>
+<div class="settings-row"><span>Following</span><b>${followingCount(currentUser.id)}</b></div>
 <div class="settings-row"><span>Community guidelines</span><span>Be kind ♡</span></div></div>
 <div class="card"><h3 style="margin-top:0">Sign out</h3>
 <p class="sub">Sign out of your STANSPACE account on this device.</p>
@@ -606,7 +803,7 @@ $("pageContent").innerHTML=`
 async function signOut(){
 const {error}=await db.auth.signOut();
 if(error){toast(error.message);return}
-session=null;currentUser=null;profile=null;myFandoms=[];posts=[];
+session=null;currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];
 showAuth("login");
 }
 
@@ -616,11 +813,20 @@ const {data,error}=await db.auth.getSession();
 if(error){showAuth("login",error.message);return}
 session=data.session;
 if(session)await loadApp();else showAuth("login");
-db.auth.onAuthStateChange((_event,newSession)=>{
+
+db.auth.onAuthStateChange((event,newSession)=>{
 session=newSession;
-if(newSession&&!currentUser){setTimeout(()=>loadApp(),0)}
-else if(!newSession){
-currentUser=null;profile=null;myFandoms=[];posts=[];
+
+if(event==="PASSWORD_RECOVERY"){
+recoveryMode=true;
+showResetPassword();
+return;
+}
+
+if(newSession&&!currentUser&&!recoveryMode){
+setTimeout(()=>loadApp(),0);
+}else if(!newSession&&!recoveryMode){
+currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];
 showAuth("login");
 }
 });
