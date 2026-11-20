@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,6 +32,7 @@ button{cursor:pointer;border:0}
 .navbtn{width:100%;text-align:left;padding:13px;border-radius:11px;background:transparent;color:var(--muted);font-weight:bold;margin:2px 0}
 .navbtn:hover,.navbtn.active{background:var(--soft);color:#7258a1}
 .navbtn span{display:inline-block;width:28px}
+.nav-count{display:inline-grid;place-items:center;background:#e47ba8;color:white;border-radius:20px;min-width:18px;height:18px;font-size:10px;margin-left:5px;padding:0 5px}
 .side-title{font-size:10px;letter-spacing:1.4px;color:#a79bb4;font-weight:bold;margin:20px 10px 8px}
 .mini-community{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;font-size:12px;cursor:pointer}
 .mini-community:hover{background:#faf7fd}
@@ -70,6 +72,7 @@ button{cursor:pointer;border:0}
 .community-tile strong{font-size:12px;display:block;margin:8px 0 3px}
 .community-tile small{font-size:10px;color:var(--muted)}
 .search,.field{width:100%;border:1px solid var(--border);border-radius:11px;padding:11px 12px;outline:none;margin:7px 0 12px}
+.search:focus,.field:focus{border-color:#c5a6df;box-shadow:0 0 0 3px #f1eafb}
 .profile-cover{height:120px;background:linear-gradient(110deg,#f7d6e5,#d9cef1);border-radius:17px;margin-bottom:-40px}
 .profile-card{padding:0 18px 18px}
 .profile-top{display:flex;align-items:end;justify-content:space-between;gap:10px}
@@ -90,7 +93,11 @@ button{cursor:pointer;border:0}
 .fandom-option{border:1px solid var(--border);border-radius:10px;padding:9px;display:flex;gap:7px;align-items:center;font-size:11px;cursor:pointer}
 .fandom-option.selected{background:#f7effa;border-color:#c8b2e3}
 .notice{background:#fff7e9;color:#8a693d;border-radius:11px;padding:11px;font-size:11px;line-height:1.5;margin:12px 0}
-.comment{font-size:12px;padding:6px 0;color:#63586d}
+.comment{font-size:12px;padding:9px 0;color:#63586d;border-bottom:1px solid #f3eff6}
+.comment-person{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.comment-person .avatar{width:27px;height:27px;font-size:11px}
+.comment-person b{cursor:pointer}
+.comment-person b:hover{color:#a34f7c}
 .comment-row{display:flex;gap:7px;margin-top:8px}
 .comment-row input{flex:1;min-width:0;border:1px solid var(--border);border-radius:9px;padding:8px}
 .settings-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:12px}
@@ -105,14 +112,25 @@ button{cursor:pointer;border:0}
 .clickable{cursor:pointer}
 .auth-link{display:block;text-align:center;margin:14px 0 0;color:#9874bc;font-size:12px;font-weight:bold;text-decoration:none;cursor:pointer}
 .auth-link:hover{text-decoration:underline}
+.person-row,.notification-row{display:flex;align-items:center;gap:11px;padding:12px 4px;border-bottom:1px solid var(--border)}
+.person-row:last-child,.notification-row:last-child{border-bottom:0}
+.person-info,.notification-info{flex:1;min-width:0}
+.person-info b,.notification-info b{font-size:13px}
+.person-info .sub,.notification-info .sub{font-size:11px}
+.notification-row{cursor:pointer;border-radius:10px}
+.notification-row:hover{background:#faf7fd}
+.notification-row.unread{background:#fcf4f9}
+.notification-dot{width:9px;height:9px;border-radius:50%;background:#e47ba8;flex-shrink:0}
+.notification-icon{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#f5eafa;color:#9b70bd;flex-shrink:0;font-size:17px}
+.unread-label{font-size:10px;color:#a34f7c;font-weight:bold}
 @media(max-width:900px){.layout{grid-template-columns:180px minmax(0,1fr)}.rightbar{display:none}}
 @media(max-width:640px){
 .topbar{height:60px;padding:0 13px}
-.layout{display:block;margin:16px auto;padding:0 11px 75px}
+.layout{display:block;margin:16px auto;padding:0 11px 82px}
 .sidebar,.rightbar{display:none}
-.mobile-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0;z-index:10}
-.mobile-nav button{background:transparent;color:var(--muted);font-size:10px;font-weight:bold}
-.mobile-nav span{display:block;font-size:18px;margin-bottom:3px}
+.mobile-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:7px 0;z-index:10}
+.mobile-nav button{background:transparent;color:var(--muted);font-size:9px;font-weight:bold;min-width:0;padding:2px}
+.mobile-nav span{display:block;font-size:17px;margin-bottom:3px}
 .community-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .card{padding:13px}
 }
@@ -151,10 +169,10 @@ const FANDOMS=[
 ];
 
 let session=null,currentUser=null,profile=null;
-let myFandoms=[],posts=[],likes=[],comments=[],relationships=[];
+let myFandoms=[],posts=[],likes=[],comments=[],relationships=[],notifications=[];
 let currentPage="home",activeFandom=null,viewedProfile=null;
-let selectedPhoto=null,previewUrl=null;
-let recoveryMode=false;
+let selectedPhoto=null,previewUrl=null,recoveryMode=false;
+let peopleSearchRequest=0;
 
 const $=id=>document.getElementById(id);
 
@@ -229,9 +247,7 @@ $("app").innerHTML=`
 <div class="auth-wrap"><div class="auth-card">
 <div class="brand">STANSPACE<span> ♡</span></div>
 <h2 style="margin-top:22px">Forgot your password?</h2>
-<p style="color:var(--muted);font-size:13px;line-height:1.6">
-No worries! Enter the email address connected to your account. We'll send you a link to reset your password.
-</p>
+<p style="color:var(--muted);font-size:13px;line-height:1.6">No worries! Enter the email address connected to your account. We'll send you a link to reset your password.</p>
 ${message?`<div class="notice">${esc(message)}</div>`:""}
 <form id="forgotForm">
 <label class="label">Email address</label>
@@ -242,34 +258,21 @@ ${message?`<div class="notice">${esc(message)}</div>`:""}
 </div></div>`;
 $("forgotForm").onsubmit=sendResetEmail;
 }
-
 async function sendResetEmail(e){
 e.preventDefault();
-const email=$("forgotEmail").value.trim();
-const button=$("resetEmailButton");
-button.disabled=true;
-button.textContent="Sending...";
-const {error}=await db.auth.resetPasswordForEmail(email,{
-redirectTo:window.location.origin
-});
-if(error){
-toast("Could not send email: "+error.message);
-button.disabled=false;
-button.textContent="Send reset link ♡";
-return;
-}
+const email=$("forgotEmail").value.trim(),button=$("resetEmailButton");
+button.disabled=true;button.textContent="Sending...";
+const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
+if(error){toast("Could not send email: "+error.message);button.disabled=false;button.textContent="Send reset link ♡";return}
 showForgotPassword("If an account exists with this email, a password-reset link has been sent. Please check your inbox and spam folder.");
 }
-
 function showResetPassword(message=""){
 recoveryMode=true;
 $("app").innerHTML=`
 <div class="auth-wrap"><div class="auth-card">
 <div class="brand">STANSPACE<span> ♡</span></div>
 <h2 style="margin-top:22px">Create a new password ♡</h2>
-<p style="color:var(--muted);font-size:13px;line-height:1.6">
-You're almost back! Choose a new password for your STANSPACE account.
-</p>
+<p style="color:var(--muted);font-size:13px;line-height:1.6">You're almost back! Choose a new password for your STANSPACE account.</p>
 ${message?`<div class="notice">${esc(message)}</div>`:""}
 <form id="newPasswordForm">
 <label class="label">New password</label>
@@ -277,68 +280,38 @@ ${message?`<div class="notice">${esc(message)}</div>`:""}
 <label class="label">Confirm new password</label>
 <input class="field" id="confirmPassword" type="password" minlength="8" required placeholder="Enter your new password again">
 <button class="btn" id="savePasswordButton" style="width:100%;margin-top:10px" type="submit">Save new password ♡</button>
-</form>
-</div></div>`;
+</form></div></div>`;
 $("newPasswordForm").onsubmit=saveNewPassword;
 }
-
 async function saveNewPassword(e){
 e.preventDefault();
-const password=$("newPassword").value;
-const confirmPassword=$("confirmPassword").value;
-if(password.length<8){
-toast("Your password must be at least 8 characters.");
-return;
-}
-if(password!==confirmPassword){
-toast("Your passwords do not match.");
-return;
-}
-const button=$("savePasswordButton");
-button.disabled=true;
-button.textContent="Saving...";
+const password=$("newPassword").value,confirmPassword=$("confirmPassword").value;
+if(password.length<8){toast("Your password must be at least 8 characters.");return}
+if(password!==confirmPassword){toast("Your passwords do not match.");return}
+const button=$("savePasswordButton");button.disabled=true;button.textContent="Saving...";
 const {error}=await db.auth.updateUser({password});
-if(error){
-toast("Could not update password: "+error.message);
-button.disabled=false;
-button.textContent="Save new password ♡";
-return;
+if(error){toast("Could not update password: "+error.message);button.disabled=false;button.textContent="Save new password ♡";return}
+recoveryMode=false;toast("Password changed successfully! ♡");await loadApp();
 }
-recoveryMode=false;
-toast("Password changed successfully! ♡");
-await loadApp();
-}
-
 function filterFandoms(){
 const q=$("fandomSearch").value.toLowerCase();
-document.querySelectorAll("#fandomOptions label").forEach(el=>{
-el.style.display=el.innerText.toLowerCase().includes(q)?"flex":"none";
-});
+document.querySelectorAll("#fandomOptions label").forEach(el=>el.style.display=el.innerText.toLowerCase().includes(q)?"flex":"none");
 }
 async function authenticate(e,mode){
 e.preventDefault();
 const email=$("email").value.trim(),password=$("password").value;
 let result;
-if(mode==="login"){
-result=await db.auth.signInWithPassword({email,password});
-}else{
-const username=$("username").value.trim().toLowerCase();
-const display_name=$("displayName").value.trim();
-const country=$("country").value.trim();
-const fandoms=selectedFandomNames();
-if(!/^[a-z0-9_]{3,20}$/.test(username)){
-toast("Username must be 3–20 characters: letters, numbers or underscores.");return;
-}
+if(mode==="login"){result=await db.auth.signInWithPassword({email,password})}
+else{
+const username=$("username").value.trim().toLowerCase(),display_name=$("displayName").value.trim(),country=$("country").value.trim(),fandoms=selectedFandomNames();
+if(!/^[a-z0-9_]{3,20}$/.test(username)){toast("Username must be 3–20 characters: letters, numbers or underscores.");return}
 if(!display_name){toast("Please enter a display name.");return}
 if(!fandoms.length){toast("Choose at least one fandom.");return}
 result=await db.auth.signUp({email,password,options:{data:{username,display_name,country,fandoms}}});
-if(!result.error&&!result.data.session){
-showAuth("login","Your account request was submitted! Check your email to confirm your account, then log in.");
-return;
-}}
+if(!result.error&&!result.data.session){showAuth("login","Your account request was submitted! Check your email to confirm your account, then log in.");return}
+}
 if(result.error){toast(result.error.message);return}
-session=result.data.session;
-if(session)await loadApp();
+session=result.data.session;if(session)await loadApp();
 }
 
 // LOAD USER DATA
@@ -349,55 +322,96 @@ currentUser=user;
 const {data:p,error:profileError}=await db.from("profiles").select("*").eq("id",user.id).single();
 if(profileError){toast("Could not load your profile: "+profileError.message);return}
 profile=p;
-
-const {data:members,error:memberError}=await db.from("user_fandoms")
-.select("fandom_id,fandoms(name)").eq("user_id",user.id);
+const {data:members,error:memberError}=await db.from("user_fandoms").select("fandom_id,fandoms(name)").eq("user_id",user.id);
 if(memberError){toast("Could not load your fandoms.");return}
 myFandoms=(members||[]).map(x=>x.fandoms?.name).filter(Boolean);
-
-await Promise.all([loadPosts(),loadRelationships()]);
+await Promise.all([loadPosts(),loadRelationships(),loadNotifications()]);
 render();
 }
 
 async function loadPosts(){
-const {data,error}=await db.from("posts")
-.select("*,profiles(username,display_name,avatar_url),fandoms(name)")
-.order("created_at",{ascending:false}).limit(100);
+const {data,error}=await db.from("posts").select("*,profiles(username,display_name,avatar_url),fandoms(name)").order("created_at",{ascending:false}).limit(100);
 if(error){toast("Could not load posts: "+error.message);posts=[];return}
 posts=data||[];
-
 for(const post of posts){
 post.imageDisplayUrl=null;
 if(post.image_url){
-const {data:imageData,error:imageError}=await db.storage
-.from("stanspace-images").createSignedUrl(post.image_url,3600);
+const {data:imageData,error:imageError}=await db.storage.from("stanspace-images").createSignedUrl(post.image_url,3600);
 if(!imageError&&imageData)post.imageDisplayUrl=imageData.signedUrl;
-}
-}
+}}
 if(posts.length){
 const ids=posts.map(p=>p.id);
 const [l,c]=await Promise.all([
 db.from("likes").select("post_id,user_id").in("post_id",ids),
-db.from("comments").select("id,post_id,user_id,content,created_at,profiles(username,display_name)").in("post_id",ids).order("created_at")
+db.from("comments").select("id,post_id,user_id,content,created_at,profiles(username,display_name,avatar_url)").in("post_id",ids).order("created_at")
 ]);
-likes=l.data||[];
-comments=c.data||[];
+likes=l.data||[];comments=c.data||[];
 }else{likes=[];comments=[]}
 }
-
 async function loadRelationships(){
 const {data,error}=await db.from("follows").select("follower_id,following_id,created_at");
-if(error){
-toast("Could not load follows: "+error.message);
-relationships=[];
-return;
-}
+if(error){toast("Could not load follows: "+error.message);relationships=[];return}
 relationships=data||[];
+}
+
+// NOTIFICATIONS
+async function loadNotifications(){
+const {data,error}=await db.from("notifications")
+.select("id,recipient_id,actor_id,type,post_id,created_at,read_at")
+.eq("recipient_id",currentUser.id)
+.order("created_at",{ascending:false}).limit(100);
+if(error){console.error("Notifications:",error.message);notifications=[];return}
+notifications=data||[];
+const actorIds=[...new Set(notifications.map(n=>n.actor_id))];
+if(!actorIds.length)return;
+const {data:people}=await db.from("profiles")
+.select("id,username,display_name,avatar_url").in("id",actorIds);
+const profilesById={};
+(people||[]).forEach(p=>profilesById[p.id]=p);
+notifications=notifications.map(n=>({...n,actor:profilesById[n.actor_id]||null}));
+}
+function unreadCount(){return notifications.filter(n=>!n.read_at).length}
+async function markNotificationRead(id){
+const {error}=await db.from("notifications").update({read_at:new Date().toISOString()}).eq("id",id).eq("recipient_id",currentUser.id);
+if(error){toast("Could not mark as read: "+error.message);return false}
+const n=notifications.find(x=>x.id===id);if(n)n.read_at=new Date().toISOString();
+return true;
+}
+async function markAllNotificationsRead(){
+const unread=notifications.filter(n=>!n.read_at);
+if(!unread.length){toast("You're all caught up! ♡");return}
+const {error}=await db.from("notifications").update({read_at:new Date().toISOString()}).eq("recipient_id",currentUser.id).is("read_at",null);
+if(error){toast("Could not update notifications: "+error.message);return}
+notifications.forEach(n=>n.read_at=n.read_at||new Date().toISOString());
+renderNotifications();updateNotificationBadges();toast("All notifications marked as read ♡");
+}
+function notificationMessage(n){
+const name=n.actor?.display_name||n.actor?.username||"Someone";
+if(n.type==="like")return `<b>${esc(name)}</b> liked your post.`;
+if(n.type==="comment")return `<b>${esc(name)}</b> commented on your post.`;
+if(n.type==="follow")return `<b>${esc(name)}</b> started following you.`;
+return "You have a new notification.";
+}
+function notificationSymbol(type){
+return type==="like"?"♥":type==="comment"?"💬":"♡";
+}
+async function openNotification(id){
+const n=notifications.find(x=>x.id===id);if(!n)return;
+await markNotificationRead(id);
+updateNotificationBadges();
+if(n.actor_id){await openUserProfile(n.actor_id)}
+}
+function updateNotificationBadges(){
+const count=unreadCount();
+document.querySelectorAll("[data-notification-count]").forEach(el=>{
+el.textContent=count;el.classList.toggle("hidden",count===0);
+});
 }
 
 // NAVIGATION
 function navButton(icon,label,page){
-return `<button class="navbtn ${currentPage===page?"active":""}" onclick="showPage('${page}')"><span>${icon}</span>${label}</button>`;
+const count=page==="notifications"?unreadCount():0;
+return `<button class="navbtn ${currentPage===page?"active":""}" onclick="showPage('${page}')"><span>${icon}</span>${label}${count?`<span class="nav-count" data-notification-count>${count}</span>`:""}</button>`;
 }
 function render(){
 $("app").innerHTML=`
@@ -411,6 +425,8 @@ $("app").innerHTML=`
 ${navButton("⌂","Home","home")}
 ${navButton("♡","My fandoms","fandoms")}
 ${navButton("⌕","Explore","explore")}
+${navButton("♙","Find People","people")}
+${navButton("♧","Notifications","notifications")}
 ${navButton("▤","My profile","profile")}
 ${navButton("⚙","Settings","settings")}
 <div class="side-title">YOUR FANDOMS</div>
@@ -429,103 +445,72 @@ ${myFandoms.slice(0,8).map(f=>`<div class="mini-community" onclick="openFandom('
 <button onclick="showPage('home')"><span>⌂</span>Home</button>
 <button onclick="showPage('fandoms')"><span>♡</span>Fandoms</button>
 <button onclick="showPage('explore')"><span>⌕</span>Explore</button>
-<button onclick="showPage('profile')"><span>♙</span>Profile</button>
-<button onclick="showPage('settings')"><span>⚙</span>Settings</button>
+<button onclick="showPage('people')"><span>♙</span>People</button>
+<button onclick="showPage('notifications')"><span>♧</span>Alerts <span class="nav-count ${unreadCount()?"":"hidden"}" data-notification-count>${unreadCount()}</span></button>
+<button onclick="showPage('profile')"><span>▤</span>Profile</button>
 </nav>`;
 showPage(currentPage);
 }
 function showPage(page){
-currentPage=page;
-viewedProfile=null;
+currentPage=page;viewedProfile=null;
 if(!$("pageContent"))return;
-const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,profile:renderProfile,settings:renderSettings};
+const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,people:renderPeople,notifications:renderNotifications,profile:renderProfile,settings:renderSettings};
 (pages[page]||renderHome)();
-document.querySelectorAll(".navbtn").forEach(b=>{
-b.classList.toggle("active",b.getAttribute("onclick")===`showPage('${page}')`);
-});
+document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.getAttribute("onclick")===`showPage('${page}')`));
 }
 
 // PHOTO PICKER
 function choosePhoto(input){
-const file=input.files?.[0];
-if(!file)return;
-if(!file.type.startsWith("image/")){
-toast("Please choose an image file.");input.value="";return;
-}
-if(file.size>5*1024*1024){
-toast("Your photo must be smaller than 5 MB.");input.value="";return;
-}
+const file=input.files?.[0];if(!file)return;
+if(!file.type.startsWith("image/")){toast("Please choose an image file.");input.value="";return}
+if(file.size>5*1024*1024){toast("Your photo must be smaller than 5 MB.");input.value="";return}
 if(previewUrl)URL.revokeObjectURL(previewUrl);
-selectedPhoto=file;
-previewUrl=URL.createObjectURL(file);
+selectedPhoto=file;previewUrl=URL.createObjectURL(file);
 const preview=$("photoPreview");
 preview.innerHTML=`<img src="${previewUrl}" alt="Photo preview"><button class="remove-photo" type="button" onclick="removePhoto()">×</button>`;
 preview.style.display="block";
 }
 function removePhoto(){
-selectedPhoto=null;
-if(previewUrl)URL.revokeObjectURL(previewUrl);
-previewUrl=null;
-const input=$("photoInput");
-if(input)input.value="";
-const preview=$("photoPreview");
-if(preview){preview.innerHTML="";preview.style.display="none"}
+selectedPhoto=null;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=null;
+const input=$("photoInput");if(input)input.value="";
+const preview=$("photoPreview");if(preview){preview.innerHTML="";preview.style.display="none"}
 }
 
 // POST COMPOSER
 function composer(fandom=null){
-return `<div class="card">
-<div class="composer">${avatar(profile.display_name)}
+return `<div class="card"><div class="composer">${avatar(profile.display_name)}
 <div style="flex:1;min-width:0">
 <textarea id="postContent" maxlength="2000" placeholder="What's happening in your K-pop world? ♡"></textarea>
 <div id="photoPreview" class="photo-preview"></div>
-<div class="composer-bottom">
-<div class="photo-tools">
+<div class="composer-bottom"><div class="photo-tools">
 <label class="photo-button" for="photoInput">＋ Add photo</label>
 <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onchange="choosePhoto(this)">
-<span class="sub">Up to 5 MB</span>
-</div>
+<span class="sub">Up to 5 MB</span></div>
 <button class="btn" id="postButton" onclick="createPost(${fandom?`'${esc(fandom)}'`:"null"})">Post ♡</button>
 </div></div></div></div>`;
 }
-
 async function createPost(fandom=null){
-const content=$("postContent")?.value.trim()||"";
-const file=selectedPhoto;
+const content=$("postContent")?.value.trim()||"",file=selectedPhoto;
 if(!content&&!file){toast("Write something or add a photo first!");return}
-const button=$("postButton");
-if(button){button.disabled=true;button.textContent="Posting..."}
+const button=$("postButton");if(button){button.disabled=true;button.textContent="Posting..."}
 let imagePath=null;
 try{
 if(file){
 const extension=file.name.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
 imagePath=`${currentUser.id}/${crypto.randomUUID()}.${extension}`;
-const {error:uploadError}=await db.storage.from("stanspace-images")
-.upload(imagePath,file,{contentType:file.type,upsert:false});
+const {error:uploadError}=await db.storage.from("stanspace-images").upload(imagePath,file,{contentType:file.type,upsert:false});
 if(uploadError)throw uploadError;
 }
-
 let fandomId=null;
 if(fandom){
 const {data:fandomRow,error:fandomError}=await db.from("fandoms").select("id").eq("name",fandom).single();
 if(fandomError)throw new Error("Could not find this fandom in the database: "+fandomError.message);
 fandomId=fandomRow.id;
 }
-
-const {error}=await db.from("posts").insert({
-user_id:currentUser.id,
-content:content,
-image_url:imagePath,
-fandom_id:fandomId
-});
+const {error}=await db.from("posts").insert({user_id:currentUser.id,content:content,image_url:imagePath,fandom_id:fandomId});
 if(error)throw error;
-
-removePhoto();
-toast("Your post is live ♡");
-await loadPosts();
-if(fandom)openFandom(fandom);
-else if(currentPage==="profile")renderProfile();
-else renderHome();
+removePhoto();toast("Your post is live ♡");await loadPosts();
+if(fandom)openFandom(fandom);else if(currentPage==="profile")renderProfile();else renderHome();
 }catch(error){
 toast("Could not publish: "+error.message);
 if(imagePath)await db.storage.from("stanspace-images").remove([imagePath]);
@@ -533,15 +518,15 @@ if(button){button.disabled=false;button.textContent="Post ♡"}
 }
 }
 
-// POST CARDS
+// POST CARDS AND COMMENTS
 function postCard(post){
 const author=post.profiles?.display_name||post.profiles?.username||"K-pop fan";
-const username=post.profiles?.username||"fan";
-const fandom=post.fandoms?.name;
+const username=post.profiles?.username||"fan",fandom=post.fandoms?.name;
 const liked=likes.some(x=>x.post_id===post.id&&x.user_id===currentUser.id);
 const postComments=comments.filter(c=>c.post_id===post.id);
-return `<article class="card">
-<div class="post-head">${avatar(author)}
+return `<article class="card" id="post-${post.id}">
+<div class="post-head">
+<div class="clickable" onclick="openUserProfile('${post.user_id}')">${avatar(author)}</div>
 <div style="flex:1">
 <div class="post-name" onclick="openUserProfile('${post.user_id}')">${esc(author)}</div>
 <div class="post-meta">@${esc(username)} · ${formatDate(post.created_at)}</div>
@@ -556,7 +541,17 @@ ${post.imageDisplayUrl?`<img class="post-image" src="${esc(post.imageDisplayUrl)
 <button class="action" onclick="toggleComments('${post.id}')">♡ ${postComments.length} Comments</button>
 </div>
 <div id="comments-${post.id}" class="hidden">
-${postComments.map(c=>`<div class="comment"><b>@${esc(c.profiles?.username||"fan")}</b> ${esc(c.content)}</div>`).join("")}
+${postComments.map(c=>{
+const commenter=c.profiles?.display_name||c.profiles?.username||"K-pop fan";
+return `<div class="comment">
+<div class="comment-person">
+<div class="clickable" onclick="openUserProfile('${c.user_id}')">${avatar(commenter)}</div>
+<div><b onclick="openUserProfile('${c.user_id}')">${esc(commenter)}</b>
+<div class="post-meta">@${esc(c.profiles?.username||"fan")} · ${formatDate(c.created_at)}</div></div>
+</div>
+<div>${esc(c.content)}</div>
+</div>`;
+}).join("")}
 <div class="comment-row">
 <input id="comment-${post.id}" maxlength="500" placeholder="Write a comment...">
 <button class="btn" onclick="addComment('${post.id}')">Send</button>
@@ -565,15 +560,12 @@ ${postComments.map(c=>`<div class="comment"><b>@${esc(c.profiles?.username||"fan
 function toggleComments(id){$("comments-"+id)?.classList.toggle("hidden")}
 async function toggleLike(postId){
 const existing=likes.find(x=>x.post_id===postId&&x.user_id===currentUser.id);
-const result=existing?
-await db.from("likes").delete().eq("post_id",postId).eq("user_id",currentUser.id):
-await db.from("likes").insert({post_id:postId,user_id:currentUser.id});
+const result=existing?await db.from("likes").delete().eq("post_id",postId).eq("user_id",currentUser.id):await db.from("likes").insert({post_id:postId,user_id:currentUser.id});
 if(result.error){toast(result.error.message);return}
 await loadPosts();refreshCurrentFeed();
 }
 async function addComment(postId){
-const input=$("comment-"+postId),content=input?.value.trim();
-if(!content)return;
+const input=$("comment-"+postId),content=input?.value.trim();if(!content)return;
 const {error}=await db.from("comments").insert({post_id:postId,user_id:currentUser.id,content});
 if(error){toast(error.message);return}
 await loadPosts();refreshCurrentFeed();
@@ -604,24 +596,20 @@ ${posts.length?posts.map(postCard).join(""):`<div class="card empty"><div class=
 // FANDOMS
 function renderFandoms(){
 $("pageContent").innerHTML=`
-<div class="page-head"><div><h1>My fandoms ♡</h1><div class="sub">Communities you've joined.</div></div>
-<button class="btn" onclick="showPage('explore')">Find more +</button></div>
+<div class="page-head"><div><h1>My fandoms ♡</h1><div class="sub">Communities you've joined.</div></div><button class="btn" onclick="showPage('explore')">Find more +</button></div>
 <div class="community-grid">${myFandoms.map(f=>fandomTile(f,true)).join("")}</div>
 ${myFandoms.length?"":`<div class="card empty"><div class="big">♡</div><h3>No fandoms yet</h3><p>Find your people in Explore.</p></div>`}`;
 }
 function fandomTile(f,joined=false){
 return `<div class="community-tile" onclick="openFandom('${esc(f)}')" style="cursor:pointer">
-<div class="tile-icon">${esc(f.slice(0,2))}</div>
-<strong>${esc(f)}</strong><small>${esc(fandomName(f))}</small>
+<div class="tile-icon">${esc(f.slice(0,2))}</div><strong>${esc(f)}</strong><small>${esc(fandomName(f))}</small>
 <div style="margin-top:10px"><span class="tag">${joined?"Joined ♡":"Explore"}</span></div></div>`;
 }
 function openFandom(f){activeFandom=f;currentPage="community";renderCommunity(f)}
 function renderCommunity(f){
-const group=fandomName(f),isMember=myFandoms.includes(f);
-const fandomPosts=posts.filter(p=>p.fandoms?.name===f);
+const group=fandomName(f),isMember=myFandoms.includes(f),fandomPosts=posts.filter(p=>p.fandoms?.name===f);
 $("pageContent").innerHTML=`
-<div class="community-hero"><span class="tag">K-POP COMMUNITY</span>
-<h2>${esc(f)} ♡</h2><p>${esc(group)} fans, this is your space.</p>
+<div class="community-hero"><span class="tag">K-POP COMMUNITY</span><h2>${esc(f)} ♡</h2><p>${esc(group)} fans, this is your space.</p>
 <div style="margin-top:15px"><button class="btn ${isMember?"secondary":""}" onclick="toggleFandom('${esc(f)}')">${isMember?"Leave fandom":"Join fandom ♡"}</button></div></div>
 ${isMember?composer(f):`<div class="card"><p>Join this fandom to participate in its community.</p></div>`}
 ${fandomPosts.length?fandomPosts.map(postCard).join(""):`<div class="card empty"><div class="big">♡</div><h3>It's quiet here!</h3><p>Community posts will appear here.</p></div>`}`;
@@ -641,8 +629,7 @@ if(error){toast(error.message);return}
 }
 const {data:members}=await db.from("user_fandoms").select("fandoms(name)").eq("user_id",currentUser.id);
 myFandoms=(members||[]).map(x=>x.fandoms?.name).filter(Boolean);
-toast(myFandoms.includes(f)?"Joined "+f+" ♡":"Left "+f);
-render();
+toast(myFandoms.includes(f)?"Joined "+f+" ♡":"Left "+f);render();
 if(currentPage==="community")openFandom(f);
 }
 
@@ -660,57 +647,74 @@ const filtered=FANDOMS.filter(([f,g])=>(f+" "+g).toLowerCase().includes(q));
 $("exploreGrid").innerHTML=filtered.map(([f])=>fandomTile(f,myFandoms.includes(f))).join("");
 }
 
-// FOLLOWERS AND FOLLOWING
-function followerCount(userId){
-return relationships.filter(x=>x.following_id===userId).length;
+// FIND PEOPLE
+function renderPeople(){
+$("pageContent").innerHTML=`
+<div class="page-head"><div><h1>Find People ♡</h1><div class="sub">Find fans, make friends and grow your fandom circle.</div></div></div>
+<div class="card">
+<input class="search" id="peopleSearch" placeholder="Search by username or display name..." oninput="searchPeople()">
+<div class="sub">Try searching for someone's username or name.</div>
+<div id="peopleResults"><div class="empty"><div class="big">♡</div><p>Start typing to find people.</p></div></div>
+</div>`;
 }
-function followingCount(userId){
-return relationships.filter(x=>x.follower_id===userId).length;
-}
-function amFollowing(userId){
-return relationships.some(x=>x.follower_id===currentUser.id&&x.following_id===userId);
-}
-async function openUserProfile(userId){
-if(userId===currentUser.id){
-viewedProfile=null;
-currentPage="profile";
-renderProfile();
+async function searchPeople(){
+const input=$("peopleSearch");if(!input)return;
+const q=input.value.trim().replace(/[%_]/g,"");
+const results=$("peopleResults");
+const request=++peopleSearchRequest;
+if(!q){results.innerHTML=`<div class="empty"><div class="big">♡</div><p>Start typing to find people.</p></div>`;return}
+results.innerHTML=`<div class="empty">Searching for people... ♡</div>`;
+const columns="id,username,display_name,country,avatar_url,bio";
+const [byUsername,byName]=await Promise.all([
+db.from("profiles").select(columns).ilike("username",`%${q}%`).limit(20),
+db.from("profiles").select(columns).ilike("display_name",`%${q}%`).limit(20)
+]);
+if(request!==peopleSearchRequest||!$("peopleResults"))return;
+if(byUsername.error||byName.error){
+console.error("People search:",byUsername.error||byName.error);
+results.innerHTML=`<div class="empty"><p>We couldn't search profiles right now. Please try again.</p><small>If this continues, profile search permissions may need adjusting in Supabase.</small></div>`;
 return;
 }
+const merged=[...(byUsername.data||[]),...(byName.data||[])];
+const unique=[...new Map(merged.map(p=>[p.id,p])).values()].filter(p=>p.id!==currentUser.id);
+if(!unique.length){results.innerHTML=`<div class="empty"><div class="big">♡</div><p>No people found for "${esc(q)}".</p></div>`;return}
+results.innerHTML=unique.map(p=>`
+<div class="person-row">
+<div class="clickable" onclick="openUserProfile('${p.id}')">${avatar(p.display_name||p.username)}</div>
+<div class="person-info clickable" onclick="openUserProfile('${p.id}')">
+<b>${esc(p.display_name||p.username)}</b><div class="sub">@${esc(p.username)} ${p.country?"· "+esc(p.country):""}</div>
+</div>
+<button class="btn secondary" onclick="openUserProfile('${p.id}')">View profile</button>
+</div>`).join("");
+}
+
+// FOLLOWERS AND FOLLOWING
+function followerCount(userId){return relationships.filter(x=>x.following_id===userId).length}
+function followingCount(userId){return relationships.filter(x=>x.follower_id===userId).length}
+function amFollowing(userId){return relationships.some(x=>x.follower_id===currentUser.id&&x.following_id===userId)}
+async function openUserProfile(userId){
+if(userId===currentUser.id){viewedProfile=null;currentPage="profile";renderProfile();return}
 const {data:p,error}=await db.from("profiles").select("*").eq("id",userId).single();
 if(error||!p){toast("Could not find this profile.");return}
-viewedProfile=p;
-currentPage="profile";
-renderProfile();
+viewedProfile=p;currentPage="profile";renderProfile();
 }
 async function toggleFollow(userId){
 if(userId===currentUser.id)return;
 const following=amFollowing(userId);
-let result;
-if(following){
-result=await db.from("follows").delete()
-.eq("follower_id",currentUser.id).eq("following_id",userId);
-}else{
-result=await db.from("follows").insert({
-follower_id:currentUser.id,
-following_id:userId
-});
-}
-if(result.error){
-toast("Could not update follow: "+result.error.message);
-return;
-}
+const result=following?
+await db.from("follows").delete().eq("follower_id",currentUser.id).eq("following_id",userId):
+await db.from("follows").insert({follower_id:currentUser.id,following_id:userId});
+if(result.error){toast("Could not update follow: "+result.error.message);return}
 await loadRelationships();
+if(!following)await loadNotifications();
 toast(following?"Unfollowed.":"Following ♡");
-renderProfile();
+renderProfile();updateNotificationBadges();
 }
 async function showFollowList(userId,type){
-const isFollowers=type==="followers";
-const rows=relationships.filter(x=>isFollowers?x.following_id===userId:x.follower_id===userId);
+const isFollowers=type==="followers",rows=relationships.filter(x=>isFollowers?x.following_id===userId:x.follower_id===userId);
 const ids=rows.map(x=>isFollowers?x.follower_id:x.following_id);
 if(!ids.length){
-$("modalRoot").innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal"><h2>${isFollowers?"Followers":"Following"}</h2><div class="empty">No ${type} yet ♡</div><button class="btn secondary" onclick="closeModal()">Close</button></div></div>`;
-return;
+$("modalRoot").innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal"><h2>${isFollowers?"Followers":"Following"}</h2><div class="empty">No ${type} yet ♡</div><button class="btn secondary" onclick="closeModal()">Close</button></div></div>`;return;
 }
 const {data:people,error}=await db.from("profiles").select("id,username,display_name").in("id",ids);
 if(error){toast("Could not load people: "+error.message);return}
@@ -727,19 +731,14 @@ ${avatar(p.display_name)}<div><b>${esc(p.display_name||p.username)}</b><div clas
 
 // PROFILE
 function renderProfile(){
-const p=viewedProfile||profile;
-const own=!viewedProfile;
+const p=viewedProfile||profile,own=!viewedProfile;
 const mine=posts.filter(post=>post.user_id===p.id);
-const followers=followerCount(p.id);
-const following=followingCount(p.id);
-const followingMe=own?false:amFollowing(p.id);
+const followers=followerCount(p.id),following=followingCount(p.id),followingMe=own?false:amFollowing(p.id);
 $("pageContent").innerHTML=`
 <div class="card" style="padding:0;overflow:hidden">
-<div class="profile-cover"></div>
-<div class="profile-card">
+<div class="profile-cover"></div><div class="profile-card">
 <div class="profile-top">${avatar(p.display_name)}
-${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</button>`:
-`<button class="btn ${followingMe?"secondary":""}" onclick="toggleFollow('${p.id}')">${followingMe?"Following · Unfollow":"Follow ♡"}</button>`}
+${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</button>`:`<button class="btn ${followingMe?"secondary":""}" onclick="toggleFollow('${p.id}')">${followingMe?"Following · Unfollow":"Follow ♡"}</button>`}
 </div>
 <div class="profile-name">${esc(p.display_name||p.username)}</div>
 <div class="sub">@${esc(p.username)} · ${esc(p.country||"")}</div>
@@ -750,11 +749,31 @@ ${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</butto
 <button class="stat-button" onclick="showFollowList('${p.id}','following')"><b>${following}</b><span>Following</span></button>
 ${own?`<div><b>${myFandoms.length}</b><span>Fandoms</span></div>`:""}
 </div>
-${own?`<div class="sub">MY FANDOMS</div>
-<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${myFandoms.map(f=>`<span class="tag">${esc(f)}</span>`).join("")}</div>`:""}
+${own?`<div class="sub">MY FANDOMS</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${myFandoms.map(f=>`<span class="tag">${esc(f)}</span>`).join("")}</div>`:""}
 </div></div>
 <h3 style="font-size:16px">${own?"My posts":esc(p.display_name||p.username)+"'s posts"}</h3>
 ${mine.length?mine.map(postCard).join(""):`<div class="card empty"><div class="big">♡</div><p>No posts yet.</p></div>`}`;
+}
+
+// NOTIFICATIONS PAGE
+function renderNotifications(){
+const unread=unreadCount();
+$("pageContent").innerHTML=`
+<div class="page-head"><div><h1>Notifications ♡</h1><div class="sub">${unread?`${unread} unread notification${unread===1?"":"s"}`:"You're all caught up!"}</div></div>
+${unread?`<button class="btn secondary" onclick="markAllNotificationsRead()">Mark all read</button>`:""}
+</div>
+<div class="card">
+${notifications.length?notifications.map(n=>`
+<div class="notification-row ${n.read_at?"":"unread"}" onclick="openNotification('${n.id}')">
+<div class="notification-icon">${notificationSymbol(n.type)}</div>
+<div class="notification-info">
+<div>${notificationMessage(n)}</div>
+<div class="sub">${formatDate(n.created_at)}</div>
+${n.read_at?"":`<div class="unread-label">NEW</div>`}
+</div>
+${n.read_at?"":`<div class="notification-dot"></div>`}
+</div>`).join(""):`<div class="empty"><div class="big">♡</div><h3>No notifications yet</h3><p>When someone likes, comments on your posts or follows you, you'll see it here.</p></div>`}
+</div>`;
 }
 
 // EDIT PROFILE
@@ -766,21 +785,15 @@ $("modalRoot").innerHTML=`
 <label class="label">Country</label><input class="field" id="editCountry" value="${esc(profile.country||"")}">
 <label class="label">Bio</label><textarea class="field" id="editBio" maxlength="250" rows="4">${esc(profile.bio||"")}</textarea>
 <div style="display:flex;gap:8px;justify-content:flex-end">
-<button class="btn secondary" onclick="closeModal()">Cancel</button>
-<button class="btn" onclick="saveProfile()">Save changes</button>
+<button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" onclick="saveProfile()">Save changes</button>
 </div></div></div>`;
 }
 async function saveProfile(){
-const updates={
-display_name:$("editDisplay").value.trim(),
-country:$("editCountry").value.trim(),
-bio:$("editBio").value.trim()
-};
+const updates={display_name:$("editDisplay").value.trim(),country:$("editCountry").value.trim(),bio:$("editBio").value.trim()};
 if(!updates.display_name){toast("Display name cannot be empty.");return}
 const {error}=await db.from("profiles").update(updates).eq("id",currentUser.id);
 if(error){toast(error.message);return}
-profile={...profile,...updates};
-closeModal();renderProfile();toast("Profile updated ♡");
+profile={...profile,...updates};closeModal();renderProfile();toast("Profile updated ♡");
 }
 
 // SETTINGS
@@ -803,7 +816,7 @@ $("pageContent").innerHTML=`
 async function signOut(){
 const {error}=await db.auth.signOut();
 if(error){toast(error.message);return}
-session=null;currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];
+session=null;currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];notifications=[];
 showAuth("login");
 }
 
@@ -813,20 +826,12 @@ const {data,error}=await db.auth.getSession();
 if(error){showAuth("login",error.message);return}
 session=data.session;
 if(session)await loadApp();else showAuth("login");
-
 db.auth.onAuthStateChange((event,newSession)=>{
 session=newSession;
-
-if(event==="PASSWORD_RECOVERY"){
-recoveryMode=true;
-showResetPassword();
-return;
-}
-
-if(newSession&&!currentUser&&!recoveryMode){
-setTimeout(()=>loadApp(),0);
-}else if(!newSession&&!recoveryMode){
-currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];
+if(event==="PASSWORD_RECOVERY"){recoveryMode=true;showResetPassword();return}
+if(newSession&&!currentUser&&!recoveryMode){setTimeout(()=>loadApp(),0)}
+else if(!newSession&&!recoveryMode){
+currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];notifications=[];
 showAuth("login");
 }
 });
