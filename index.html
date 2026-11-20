@@ -123,16 +123,39 @@ button{cursor:pointer;border:0}
 .notification-dot{width:9px;height:9px;border-radius:50%;background:#e47ba8;flex-shrink:0}
 .notification-icon{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#f5eafa;color:#9b70bd;flex-shrink:0;font-size:17px}
 .unread-label{font-size:10px;color:#a34f7c;font-weight:bold}
+
+/* PRIVATE MESSAGES */
+.messages-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:12px;min-height:420px}
+.messages-list{max-height:540px;overflow:auto}
+.conversation-item{display:flex;align-items:center;gap:9px;padding:11px;border-radius:12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.conversation-item:hover,.conversation-item.selected{background:var(--soft)}
+.conversation-info{flex:1;min-width:0}
+.conversation-info b{font-size:12px}
+.conversation-info .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-panel{display:flex;flex-direction:column;min-height:420px}
+.chat-header{padding:10px;border-bottom:1px solid var(--border);font-weight:bold;display:flex;align-items:center;gap:9px}
+.chat-body{flex:1;padding:12px;overflow:auto;max-height:420px;display:flex;flex-direction:column;gap:9px}
+.message-bubble{max-width:78%;padding:10px 12px;border-radius:15px;background:#f1eafb;font-size:13px;line-height:1.5;overflow-wrap:anywhere;white-space:pre-wrap;align-self:flex-start}
+.message-bubble.mine{background:#f9e0eb;align-self:flex-end}
+.message-time{font-size:9px;color:var(--muted);margin-top:5px}
+.chat-compose{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border)}
+.chat-compose input{flex:1;min-width:0;border:1px solid var(--border);border-radius:10px;padding:11px;outline:none}
+.chat-compose button{flex-shrink:0}
+.message-policy{background:#f8f3fc;color:#765ca9;border-radius:11px;padding:10px;font-size:11px;line-height:1.5;margin-top:10px}
+
 @media(max-width:900px){.layout{grid-template-columns:180px minmax(0,1fr)}.rightbar{display:none}}
 @media(max-width:640px){
 .topbar{height:60px;padding:0 13px}
 .layout{display:block;margin:16px auto;padding:0 11px 82px}
 .sidebar,.rightbar{display:none}
 .mobile-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:7px 0;z-index:10}
-.mobile-nav button{background:transparent;color:var(--muted);font-size:9px;font-weight:bold;min-width:0;padding:2px}
-.mobile-nav span{display:block;font-size:17px;margin-bottom:3px}
+.mobile-nav button{background:transparent;color:var(--muted);font-size:8px;font-weight:bold;min-width:0;padding:2px;flex:1}
+.mobile-nav span{display:block;font-size:16px;margin-bottom:3px}
 .community-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .card{padding:13px}
+.messages-layout{grid-template-columns:1fr}
+.messages-list{max-height:220px}
+.chat-panel{min-height:380px}
 }
 </style>
 </head>
@@ -173,6 +196,12 @@ let myFandoms=[],posts=[],likes=[],comments=[],relationships=[],notifications=[]
 let currentPage="home",activeFandom=null,viewedProfile=null;
 let selectedPhoto=null,previewUrl=null,recoveryMode=false;
 let peopleSearchRequest=0;
+
+/* MESSAGE STATE */
+let unreadMessages=0;
+let activeConversationId=null;
+let messageRows=[];
+let messagePeople={};
 
 const $=id=>document.getElementById(id);
 
@@ -326,6 +355,7 @@ const {data:members,error:memberError}=await db.from("user_fandoms").select("fan
 if(memberError){toast("Could not load your fandoms.");return}
 myFandoms=(members||[]).map(x=>x.fandoms?.name).filter(Boolean);
 await Promise.all([loadPosts(),loadRelationships(),loadNotifications()]);
+await loadUnreadMessages();
 render();
 }
 
@@ -408,10 +438,264 @@ el.textContent=count;el.classList.toggle("hidden",count===0);
 });
 }
 
+// PRIVATE MESSAGES
+function isMutualFollower(userId){
+return amFollowing(userId)&&relationships.some(
+x=>x.follower_id===userId&&x.following_id===currentUser.id
+);
+}
+
+async function loadUnreadMessages(){
+if(!currentUser)return;
+const {count,error}=await db.from("messages")
+.select("id",{count:"exact",head:true})
+.eq("receiver_id",currentUser.id)
+.is("read_at",null);
+
+if(error){
+console.error("Unread messages:",error.message);
+unreadMessages=0;
+}else{
+unreadMessages=count||0;
+}
+updateMessageBadges();
+}
+
+function updateMessageBadges(){
+document.querySelectorAll("[data-message-count]").forEach(el=>{
+el.textContent=unreadMessages;
+el.classList.toggle("hidden",unreadMessages===0);
+});
+}
+
+async function loadMessageRows(){
+const [sent,received]=await Promise.all([
+db.from("messages").select("*")
+.eq("sender_id",currentUser.id)
+.order("created_at",{ascending:true}).limit(500),
+
+db.from("messages").select("*")
+.eq("receiver_id",currentUser.id)
+.order("created_at",{ascending:true}).limit(500)
+]);
+
+if(sent.error||received.error){
+toast("Could not load messages: "+(sent.error||received.error).message);
+return false;
+}
+
+messageRows=[...new Map(
+[...(sent.data||[]),...(received.data||[])].map(m=>[m.id,m])
+).values()].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+
+const otherIds=[...new Set(messageRows.map(m=>
+m.sender_id===currentUser.id?m.receiver_id:m.sender_id
+))];
+
+messagePeople={};
+
+if(otherIds.length){
+const {data,error}=await db.from("profiles")
+.select("id,username,display_name,avatar_url")
+.in("id",otherIds);
+
+if(error){
+toast("Could not load conversation profiles.");
+return false;
+}
+(data||[]).forEach(p=>messagePeople[p.id]=p);
+}
+return true;
+}
+
+function conversationList(){
+const latest={};
+
+messageRows.forEach(m=>{
+const other=m.sender_id===currentUser.id?m.receiver_id:m.sender_id;
+if(!latest[other]||new Date(m.created_at)>new Date(latest[other].created_at)){
+latest[other]=m;
+}
+});
+
+const ids=Object.keys(latest).sort((a,b)=>
+new Date(latest[b].created_at)-new Date(latest[a].created_at)
+);
+
+return ids.map(id=>{
+const p=messagePeople[id]||{};
+const last=latest[id];
+const unread=messageRows.some(m=>
+m.sender_id===id&&m.receiver_id===currentUser.id&&!m.read_at
+);
+return {id,person:p,last,unread};
+});
+}
+
+async function openConversation(userId){
+if(!isMutualFollower(userId)){
+toast("You must follow each other to message.");
+return;
+}
+activeConversationId=userId;
+currentPage="messages";
+await renderMessages();
+}
+
+async function renderMessages(){
+const page=$("pageContent");
+if(!page)return;
+
+page.innerHTML=`
+<div class="page-head">
+<div><h1>Messages ♡</h1><div class="sub">Private conversations with your mutual followers.</div></div>
+<button class="btn secondary" onclick="renderMessages()">Refresh</button>
+</div>
+<div class="notice">
+Private messaging is available only between mutual followers. You and the other person must follow each other to start a conversation.
+</div>
+<div class="messages-layout">
+<div class="card messages-list" id="conversationList">
+<div class="empty">Loading conversations... ♡</div>
+</div>
+<div class="card chat-panel" id="chatPanel">
+<div class="empty"><div class="big">♡</div><h3>Your messages live here</h3><p>Choose a conversation to get started.</p></div>
+</div>
+</div>`;
+
+const ok=await loadMessageRows();
+if(!ok)return;
+
+const conversations=conversationList();
+const list=$("conversationList");
+
+list.innerHTML=conversations.length?conversations.map(c=>`
+<div class="conversation-item ${activeConversationId===c.id?"selected":""}"
+onclick="selectConversation('${c.id}')">
+${avatar(c.person.display_name||c.person.username)}
+<div class="conversation-info">
+<b>${esc(c.person.display_name||c.person.username||"K-pop fan")}</b>
+<div class="sub">${esc(c.last.content)}</div>
+</div>
+${c.unread?`<span class="notification-dot"></span>`:""}
+</div>`).join(""):`
+<div class="empty"><div class="big">♡</div><p>No conversations yet.</p><small>Visit someone's profile and follow each other to start chatting.</small></div>`;
+
+if(activeConversationId){
+const person=messagePeople[activeConversationId];
+if(person&&isMutualFollower(activeConversationId)){
+await showConversation(activeConversationId);
+}else{
+activeConversationId=null;
+$("chatPanel").innerHTML=`<div class="empty"><p>You can only message mutual followers.</p></div>`;
+}
+}
+await loadUnreadMessages();
+}
+
+async function selectConversation(userId){
+activeConversationId=userId;
+await showConversation(userId);
+document.querySelectorAll(".conversation-item").forEach(el=>el.classList.remove("selected"));
+}
+
+async function showConversation(userId){
+const panel=$("chatPanel");
+if(!panel)return;
+
+const person=messagePeople[userId];
+if(!person)return;
+
+const conversation=messageRows.filter(m=>
+(m.sender_id===currentUser.id&&m.receiver_id===userId)||
+(m.sender_id===userId&&m.receiver_id===currentUser.id)
+);
+
+const unread=conversation.filter(m=>
+m.sender_id===userId&&m.receiver_id===currentUser.id&&!m.read_at
+);
+
+if(unread.length){
+const {error}=await db.from("messages")
+.update({read_at:new Date().toISOString()})
+.eq("sender_id",userId)
+.eq("receiver_id",currentUser.id)
+.is("read_at",null);
+
+if(error){
+console.error("Could not mark messages read:",error.message);
+}else{
+unread.forEach(m=>m.read_at=new Date().toISOString());
+await loadUnreadMessages();
+}
+}
+
+panel.innerHTML=`
+<div class="chat-header">
+${avatar(person.display_name||person.username)}
+<div style="flex:1;cursor:pointer" onclick="openUserProfile('${userId}')">
+${esc(person.display_name||person.username)}
+<div class="sub">@${esc(person.username)}</div>
+</div>
+<button class="btn secondary" onclick="openUserProfile('${userId}')">Profile</button>
+</div>
+<div class="chat-body" id="chatBody">
+${conversation.length?conversation.map(m=>`
+<div class="message-bubble ${m.sender_id===currentUser.id?"mine":""}">
+${esc(m.content)}
+<div class="message-time">${formatDate(m.created_at)}</div>
+</div>`).join(""):`
+<div class="empty"><div class="big">♡</div><p>Say hello! Start your conversation.</p></div>`}
+</div>
+<div class="chat-compose">
+<input id="messageInput" maxlength="2000" placeholder="Write a private message...">
+<button class="btn" id="sendMessageButton" onclick="sendMessage('${userId}')">Send</button>
+</div>`;
+
+const body=$("chatBody");
+if(body)body.scrollTop=body.scrollHeight;
+
+$("messageInput").onkeydown=e=>{
+if(e.key==="Enter"&&!e.shiftKey){
+e.preventDefault();
+sendMessage(userId);
+}
+};
+}
+
+async function sendMessage(userId){
+const input=$("messageInput");
+const content=input?.value.trim();
+if(!content)return;
+
+if(!isMutualFollower(userId)){
+toast("You must follow each other to message.");
+return;
+}
+
+const button=$("sendMessageButton");
+if(button){button.disabled=true;button.textContent="Sending...";}
+
+const {error}=await db.from("messages").insert({
+sender_id:currentUser.id,
+receiver_id:userId,
+content
+});
+
+if(error){
+toast("Could not send message: "+error.message);
+if(button){button.disabled=false;button.textContent="Send";}
+return;
+}
+
+await renderMessages();
+}
+
 // NAVIGATION
 function navButton(icon,label,page){
-const count=page==="notifications"?unreadCount():0;
-return `<button class="navbtn ${currentPage===page?"active":""}" onclick="showPage('${page}')"><span>${icon}</span>${label}${count?`<span class="nav-count" data-notification-count>${count}</span>`:""}</button>`;
+const count=page==="notifications"?unreadCount():page==="messages"?unreadMessages:0;
+const attribute=page==="notifications"?"data-notification-count":page==="messages"?"data-message-count":"";
+return `<button class="navbtn ${currentPage===page?"active":""}" onclick="showPage('${page}')"><span>${icon}</span>${label}${count?`<span class="nav-count" ${attribute}>${count}</span>`:""}</button>`;
 }
 function render(){
 $("app").innerHTML=`
@@ -427,6 +711,7 @@ ${navButton("♡","My fandoms","fandoms")}
 ${navButton("⌕","Explore","explore")}
 ${navButton("♙","Find People","people")}
 ${navButton("♧","Notifications","notifications")}
+${navButton("✉","Messages","messages")}
 ${navButton("▤","My profile","profile")}
 ${navButton("⚙","Settings","settings")}
 <div class="side-title">YOUR FANDOMS</div>
@@ -447,6 +732,7 @@ ${myFandoms.slice(0,8).map(f=>`<div class="mini-community" onclick="openFandom('
 <button onclick="showPage('explore')"><span>⌕</span>Explore</button>
 <button onclick="showPage('people')"><span>♙</span>People</button>
 <button onclick="showPage('notifications')"><span>♧</span>Alerts <span class="nav-count ${unreadCount()?"":"hidden"}" data-notification-count>${unreadCount()}</span></button>
+<button onclick="showPage('messages')"><span>✉</span>Messages <span class="nav-count ${unreadMessages?"":"hidden"}" data-message-count>${unreadMessages}</span></button>
 <button onclick="showPage('profile')"><span>▤</span>Profile</button>
 </nav>`;
 showPage(currentPage);
@@ -454,7 +740,7 @@ showPage(currentPage);
 function showPage(page){
 currentPage=page;viewedProfile=null;
 if(!$("pageContent"))return;
-const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,people:renderPeople,notifications:renderNotifications,profile:renderProfile,settings:renderSettings};
+const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,people:renderPeople,notifications:renderNotifications,messages:renderMessages,profile:renderProfile,settings:renderSettings};
 (pages[page]||renderHome)();
 document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.getAttribute("onclick")===`showPage('${page}')`));
 }
@@ -692,6 +978,8 @@ results.innerHTML=unique.map(p=>`
 function followerCount(userId){return relationships.filter(x=>x.following_id===userId).length}
 function followingCount(userId){return relationships.filter(x=>x.follower_id===userId).length}
 function amFollowing(userId){return relationships.some(x=>x.follower_id===currentUser.id&&x.following_id===userId)}
+function followsMe(userId){return relationships.some(x=>x.follower_id===userId&&x.following_id===currentUser.id)}
+
 async function openUserProfile(userId){
 if(userId===currentUser.id){viewedProfile=null;currentPage="profile";renderProfile();return}
 const {data:p,error}=await db.from("profiles").select("*").eq("id",userId).single();
@@ -734,15 +1022,23 @@ function renderProfile(){
 const p=viewedProfile||profile,own=!viewedProfile;
 const mine=posts.filter(post=>post.user_id===p.id);
 const followers=followerCount(p.id),following=followingCount(p.id),followingMe=own?false:amFollowing(p.id);
+const mutual=own?false:isMutualFollower(p.id);
+const otherFollows=own?false:followsMe(p.id);
+
 $("pageContent").innerHTML=`
 <div class="card" style="padding:0;overflow:hidden">
 <div class="profile-cover"></div><div class="profile-card">
 <div class="profile-top">${avatar(p.display_name)}
-${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</button>`:`<button class="btn ${followingMe?"secondary":""}" onclick="toggleFollow('${p.id}')">${followingMe?"Following · Unfollow":"Follow ♡"}</button>`}
+${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</button>`:`
+<div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">
+<button class="btn ${followingMe?"secondary":""}" onclick="toggleFollow('${p.id}')">${followingMe?"Following · Unfollow":"Follow ♡"}</button>
+${mutual?`<button class="btn" onclick="openConversation('${p.id}')">✉ Message</button>`:`<button class="btn secondary" disabled title="You must follow each other to message">✉ Message locked</button>`}
+</div>`}
 </div>
 <div class="profile-name">${esc(p.display_name||p.username)}</div>
 <div class="sub">@${esc(p.username)} · ${esc(p.country||"")}</div>
 <p class="profile-bio">${esc(p.bio||"No bio yet. Add something about yourself ♡")}</p>
+${!own?`<div class="message-policy">${mutual?"♡ You follow each other! You can send private messages.":otherFollows?"♡ This person follows you. Follow them back to unlock private messaging.":"♡ Private messages are available only when you and the other person follow each other."}</div>`:""}
 <div class="stats">
 <div><b>${mine.length}</b><span>Posts</span></div>
 <button class="stat-button" onclick="showFollowList('${p.id}','followers')"><b>${followers}</b><span>Followers</span></button>
@@ -817,6 +1113,7 @@ async function signOut(){
 const {error}=await db.auth.signOut();
 if(error){toast(error.message);return}
 session=null;currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];notifications=[];
+messageRows=[];messagePeople={};unreadMessages=0;activeConversationId=null;
 showAuth("login");
 }
 
@@ -832,6 +1129,7 @@ if(event==="PASSWORD_RECOVERY"){recoveryMode=true;showResetPassword();return}
 if(newSession&&!currentUser&&!recoveryMode){setTimeout(()=>loadApp(),0)}
 else if(!newSession&&!recoveryMode){
 currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];notifications=[];
+messageRows=[];messagePeople={};unreadMessages=0;activeConversationId=null;
 showAuth("login");
 }
 });
