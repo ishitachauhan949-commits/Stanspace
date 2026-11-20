@@ -1,84 +1,59 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>STANSPACE ♡ | K-pop Community</title>
-
+<title>STANSPACE ♡</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {
-  --bg:#f8f6fc;
-  --white:#fff;
-  --text:#30283b;
-  --muted:#93889e;
-  --pink:#ed91b9;
-  --purple:#9276c8;
-  --soft:#f1eafb;
-  --border:#eee8f4;
-  --shadow:0 6px 25px rgba(67,44,91,.07);
+:root{
+--bg:#f8f6fc;--white:#fff;--text:#30283b;--muted:#93889e;
+--pink:#ed91b9;--purple:#9276c8;--soft:#f1eafb;
+--border:#eee8f4;--shadow:0 6px 25px rgba(67,44,91,.07)
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
 button,input,textarea{font:inherit}
 button{cursor:pointer;border:0}
-.topbar{
-  height:68px;background:white;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 5%;position:sticky;top:0;z-index:10
-}
+.hidden{display:none!important}
 .brand{font-size:25px;font-weight:900;color:#765ca9;letter-spacing:-1px}
 .brand span{color:var(--pink)}
-.btn{
-  border-radius:12px;padding:10px 16px;
-  background:linear-gradient(135deg,#e995ba,#a58ad6);
-  color:white;font-weight:bold
-}
+.btn{border-radius:12px;padding:10px 16px;background:linear-gradient(135deg,#e995ba,#a58ad6);color:white;font-weight:bold}
 .btn.secondary{background:var(--soft);color:#715b9c}
-.layout{
-  max-width:1200px;margin:25px auto;padding:0 15px;
-  display:grid;grid-template-columns:205px minmax(0,1fr) 220px;gap:20px
-}
+.btn.danger{background:#fff0f2;color:#c05d80}
+.topbar{height:68px;background:white;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 5%;position:sticky;top:0;z-index:10}
+.layout{max-width:1200px;margin:25px auto;padding:0 15px;display:grid;grid-template-columns:205px minmax(0,1fr) 220px;gap:20px}
 .sidebar,.rightbar{position:sticky;top:88px;align-self:start}
-.panel,.card,.navbox{
-  background:white;border:1px solid var(--border);
-  border-radius:18px;box-shadow:var(--shadow)
-}
+.navbox,.card,.panel{background:white;border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow)}
 .navbox{padding:12px}
-.navbtn{
-  width:100%;text-align:left;padding:13px;border-radius:11px;
-  background:transparent;color:var(--muted);font-weight:bold;margin:2px 0
-}
+.navbtn{width:100%;text-align:left;padding:13px;border-radius:11px;background:transparent;color:var(--muted);font-weight:bold;margin:2px 0}
 .navbtn:hover,.navbtn.active{background:var(--soft);color:#7258a1}
 .navbtn span{display:inline-block;width:28px}
 .side-title{font-size:10px;letter-spacing:1.4px;color:#a79bb4;font-weight:bold;margin:20px 10px 8px}
 .mini-community{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;font-size:12px;cursor:pointer}
 .mini-community:hover{background:#faf7fd}
-.dot,.tile-icon{
-  width:32px;height:32px;border-radius:10px;
-  background:linear-gradient(135deg,#f8d8e6,#e2d8fa);
-  display:grid;place-items:center;color:#795d9f;font-size:11px;font-weight:bold
-}
+.dot,.tile-icon{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#f8d8e6,#e2d8fa);display:grid;place-items:center;color:#795d9f;font-size:11px;font-weight:bold}
 .main{min-width:0}
 .page-head{display:flex;justify-content:space-between;align-items:center;margin:2px 0 17px}
 .page-head h1{font-size:24px;margin:0}
 .sub{color:var(--muted);font-size:12px;margin-top:5px}
 .card{padding:17px;margin-bottom:15px}
-.avatar{
-  width:40px;height:40px;border-radius:50%;
-  background:linear-gradient(135deg,#f6c8dc,#cfc1f1);
-  display:grid;place-items:center;color:#765ca9;font-weight:bold;overflow:hidden;flex-shrink:0
-}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f6c8dc,#cfc1f1);display:grid;place-items:center;color:#765ca9;font-weight:bold;overflow:hidden;flex-shrink:0}
 .avatar img{width:100%;height:100%;object-fit:cover}
 .composer{display:flex;gap:11px}
 .composer textarea{width:100%;border:0;resize:vertical;min-height:55px;outline:none;font-size:14px}
-.composer-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.composer-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);gap:8px;flex-wrap:wrap}
+.photo-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.photo-button{background:var(--soft);color:#765ca9;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:bold;cursor:pointer}
+.photo-preview{display:none;margin-top:12px;position:relative;width:fit-content;max-width:100%}
+.photo-preview img{display:block;max-width:100%;max-height:300px;object-fit:contain;border-radius:13px;border:1px solid var(--border)}
+.remove-photo{position:absolute;top:7px;right:7px;background:#30283bcc;color:white;border-radius:50%;width:27px;height:27px}
 .post-head{display:flex;align-items:center;gap:10px}
 .post-name{font-weight:bold;font-size:13px}
 .post-meta{font-size:11px;color:var(--muted);margin-top:3px}
 .post-text{font-size:14px;line-height:1.6;margin:14px 0;white-space:pre-wrap;overflow-wrap:anywhere}
-.post-img{width:100%;max-height:440px;object-fit:cover;border-radius:13px}
-.post-actions{display:flex;gap:17px;border-top:1px solid var(--border);padding-top:11px}
+.post-image{width:100%;max-height:560px;object-fit:contain;border-radius:13px;margin:4px 0 12px;background:#f8f6fc}
+.post-actions{display:flex;gap:17px;border-top:1px solid var(--border);padding-top:11px;flex-wrap:wrap}
 .action{background:transparent;color:var(--muted);font-size:12px;font-weight:bold;padding:4px}
 .action.liked{color:#e47ba8}
 .tag{display:inline-block;background:#f6effa;color:#886daf;border-radius:20px;padding:5px 9px;font-size:10px;font-weight:bold}
@@ -110,716 +85,547 @@ button{cursor:pointer;border:0}
 .fandom-option{border:1px solid var(--border);border-radius:10px;padding:9px;display:flex;gap:7px;align-items:center;font-size:11px;cursor:pointer}
 .fandom-option.selected{background:#f7effa;border-color:#c8b2e3}
 .notice{background:#fff7e9;color:#8a693d;border-radius:11px;padding:11px;font-size:11px;line-height:1.5;margin:12px 0}
-.hidden{display:none!important}
 .comment{font-size:12px;padding:6px 0;color:#63586d}
 .comment-row{display:flex;gap:7px;margin-top:8px}
 .comment-row input{flex:1;min-width:0;border:1px solid var(--border);border-radius:9px;padding:8px}
 .settings-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:12px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#33283f;color:white;padding:11px 17px;border-radius:30px;font-size:12px;z-index:50}
 .mobile-nav{display:none}
-@media(max-width:900px){
- .layout{grid-template-columns:180px minmax(0,1fr)}
- .rightbar{display:none}
-}
+.auth-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 20% 20%,#f8dce9 0,transparent 35%),radial-gradient(circle at 80% 80%,#e8e0f7 0,transparent 38%),var(--bg)}
+.auth-card{width:min(480px,100%);background:white;border:1px solid var(--border);border-radius:22px;padding:28px;box-shadow:var(--shadow)}
+.auth-tabs{display:flex;gap:8px;margin:20px 0}
+.auth-tabs button{flex:1;padding:11px;border-radius:10px;background:#f5f0f8;color:#806b92}
+.auth-tabs button.active{background:#f7dfeb;color:#a34f7c}
+.loading{text-align:center;padding:60px 15px;color:var(--muted)}
+@media(max-width:900px){.layout{grid-template-columns:180px minmax(0,1fr)}.rightbar{display:none}}
 @media(max-width:640px){
- .topbar{height:60px;padding:0 13px}
- .layout{display:block;margin:16px auto;padding:0 11px 75px}
- .sidebar,.rightbar{display:none}
- .mobile-nav{
-  position:fixed;bottom:0;left:0;right:0;background:white;
-  border-top:1px solid var(--border);display:flex;
-  justify-content:space-around;padding:8px 0;z-index:10
- }
- .mobile-nav button{background:transparent;color:var(--muted);font-size:10px;font-weight:bold}
- .mobile-nav span{display:block;font-size:18px;margin-bottom:3px}
- .community-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
- .card{padding:13px}
+.topbar{height:60px;padding:0 13px}
+.layout{display:block;margin:16px auto;padding:0 11px 75px}
+.sidebar,.rightbar{display:none}
+.mobile-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 0;z-index:10}
+.mobile-nav button{background:transparent;color:var(--muted);font-size:10px;font-weight:bold}
+.mobile-nav span{display:block;font-size:18px;margin-bottom:3px}
+.community-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.card{padding:13px}
 }
 </style>
 </head>
-
 <body>
-
-<header class="topbar">
- <div class="brand">STANSPACE<span> ♡</span></div>
- <div style="display:flex;gap:10px;align-items:center">
-  <button class="btn secondary" onclick="showPage('explore')">＋ Find fandoms</button>
-  <div class="avatar" id="topAvatar">S</div>
- </div>
-</header>
-
-<div class="layout">
-
-<aside class="sidebar">
- <div class="navbox">
-  <button class="navbtn active" data-page="home" onclick="showPage('home')"><span>⌂</span>Home</button>
-  <button class="navbtn" data-page="fandoms" onclick="showPage('fandoms')"><span>♡</span>My fandoms</button>
-  <button class="navbtn" data-page="explore" onclick="showPage('explore')"><span>⌕</span>Explore</button>
-  <button class="navbtn" data-page="messages" onclick="showPage('messages')"><span>✉</span>Messages</button>
-  <button class="navbtn" data-page="notifications" onclick="showPage('notifications')"><span>♧</span>Notifications</button>
-  <button class="navbtn" data-page="profile" onclick="showPage('profile')"><span>◉</span>My profile</button>
-  <button class="navbtn" data-page="settings" onclick="showPage('settings')"><span>⚙</span>Settings</button>
- </div>
- <div class="side-title">YOUR COMMUNITIES</div>
- <div id="sideFandoms"></div>
-</aside>
-
-<main class="main" id="main"></main>
-
-<aside class="rightbar">
- <div class="panel" style="padding:15px;margin-bottom:13px">
-  <h3 style="font-size:13px">✧ Your fandom corner</h3>
-  <div id="rightFandoms"></div>
-  <button class="btn secondary" style="width:100%;margin-top:8px" onclick="showPage('fandoms')">View my fandoms</button>
- </div>
- <div class="panel" style="padding:15px">
-  <h3 style="font-size:13px">♡ A little reminder</h3>
-  <p style="font-size:11px;color:var(--muted);line-height:1.6">Your corner of the internet, filled with people who love the same music you do.</p>
- </div>
-</aside>
-
-</div>
-
-<nav class="mobile-nav">
- <button onclick="showPage('home')"><span>⌂</span>Home</button>
- <button onclick="showPage('fandoms')"><span>♡</span>Fandoms</button>
- <button onclick="showPage('explore')"><span>⌕</span>Explore</button>
- <button onclick="showPage('messages')"><span>✉</span>Messages</button>
- <button onclick="showPage('profile')"><span>◉</span>Profile</button>
-</nav>
-
+<div id="app"><div class="loading">Opening STANSPACE ♡ ...</div></div>
 <div id="modalRoot"></div>
 <div id="toastRoot"></div>
 
 <script>
-// ========================================
-// STANSPACE - K-POP SOCIAL COMMUNITY
-// ========================================
+const SUPABASE_URL="https://pdzdcleaimrnpqyajwlh.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_9ts98NbNcKp35f-EGVm0Ew_Bjyo2W2l";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 
-const FANDOMS = [
- ["ARMY","BTS"],["ATINY","ATEEZ"],["BLINK","BLACKPINK"],
- ["MOA","TXT"],["STAY","Stray Kids"],["ENGENE","ENHYPEN"],
- ["CARAT","SEVENTEEN"],["NCTzen","NCT"],["MIDZY","ITZY"],
- ["NEVERLAND","(G)I-DLE"],["ONCE","TWICE"],["MY","aespa"],
- ["FEARNOT","LE SSERAFIM"],["DIVE","IVE"],["Bunnies","NewJeans"],
- ["PLORY","PURPLE KISS"],["MONBEBE","MONSTA X"],["EXO-L","EXO"],
- ["ELF","Super Junior"],["S♡NE","Girls' Generation"],
- ["VIP","BIGBANG"],["Shawol","SHINee"],["MooMoo","MAMAMOO"],
- ["ReVeluv","Red Velvet"],["LUVITY","CRAVITY"],["THE B","THE BOYZ"],
- ["iKONIC","iKON"],["TEUME","TREASURE"],["N.Fia","N.Flying"],
- ["Villains","Xdinary Heroes"],["BRIIZE","RIIZE"],["SWITH","STAYC"],
- ["Kep1ian","Kep1er"],["LUNÉ","&TEAM"],["WENEE","WONHO"],
- ["Ujung","WJSN"],["Hottest","2PM"],["Kamilia","KARA"],
- ["Cassiopeia","TVXQ"],["Melody","BTOB"],["P1ece","P1Harmony"],
- ["WayZenNi","WayV"],["PLLI","PLAVE"],["FUSE","ONF"],
- ["KISSY","KISS OF LIFE"],["S2U","SECRET NUMBER"],
- ["L.O.Λ.E","NU'EST"],["M1-KEY","H1-KEY"],
- ["POCKETDOL","FANTASY BOYS"],["NCTzen 127","NCT 127"]
+const FANDOMS=[
+["ARMY","BTS"],["ATINY","ATEEZ"],["BLINK","BLACKPINK"],
+["MOA","TXT"],["STAY","Stray Kids"],["ENGENE","ENHYPEN"],
+["CARAT","SEVENTEEN"],["NCTzen","NCT"],["MIDZY","ITZY"],
+["NEVERLAND","(G)I-DLE"],["ONCE","TWICE"],["MY","aespa"],
+["FEARNOT","LE SSERAFIM"],["DIVE","IVE"],["Bunnies","NewJeans"],
+["PLORY","PURPLE KISS"],["MONBEBE","MONSTA X"],["EXO-L","EXO"],
+["ELF","Super Junior"],["S♡NE","Girls' Generation"],
+["VIP","BIGBANG"],["Shawol","SHINee"],["MooMoo","MAMAMOO"],
+["ReVeluv","Red Velvet"],["LUVITY","CRAVITY"],["THE B","THE BOYZ"],
+["iKONIC","iKON"],["TEUME","TREASURE"],["N.Fia","N.Flying"],
+["Villains","Xdinary Heroes"],["BRIIZE","RIIZE"],["SWITH","STAYC"],
+["Kep1ian","Kep1er"],["LUNÉ","&TEAM"],["WENEE","WONHO"],
+["Ujung","WJSN"],["Hottest","2PM"],["Kamilia","KARA"],
+["Cassiopeia","TVXQ"],["Melody","BTOB"],["P1ece","P1Harmony"],
+["WayZenNi","WayV"],["PLLI","PLAVE"],["FUSE","ONF"],
+["KISSY","KISS OF LIFE"],["S2U","SECRET NUMBER"],
+["L.O.Λ.E","NU'EST"],["M1-KEY","H1-KEY"],
+["POCKETDOL","FANTASY BOYS"],["NCTzen 127","NCT 127"]
 ];
 
-const starter = {
- user:{
-  name:"Starlight",
-  username:"starlight_07",
-  bio:"Here for the music, memories and fandom friendships ♡",
-  country:"India",
-  private:false,
-  avatar:"",
-  fandoms:["ATINY","ARMY","MOA"]
- },
- posts:[],
- likes:[],
- comments:{}
-};
+let session=null,currentUser=null,profile=null;
+let myFandoms=[],posts=[],likes=[],comments=[];
+let currentPage="home",activeFandom=null;
+let selectedPhoto=null,previewUrl=null;
 
-let state;
+const $=id=>document.getElementById(id);
+const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+}[c]));
+
+function toast(message){
+$("toastRoot").innerHTML=`<div class="toast">${esc(message)}</div>`;
+setTimeout(()=>$("toastRoot").innerHTML="",2600);
+}
+function closeModal(){$("modalRoot").innerHTML=""}
+function avatar(name){
+return `<div class="avatar">${esc((name||"U").slice(0,1).toUpperCase())}</div>`;
+}
+function formatDate(date){
+return new Date(date).toLocaleString([],{dateStyle:"medium",timeStyle:"short"});
+}
+function fandomName(id){
+const found=FANDOMS.find(x=>x[0]===id);
+return found?found[1]:id||"Community";
+}
+function selectedFandomNames(){
+return [...document.querySelectorAll("#fandomOptions input:checked")].map(x=>x.value);
+}
+
+// AUTHENTICATION
+function showAuth(mode="login",message=""){
+$("app").innerHTML=`
+<div class="auth-wrap"><div class="auth-card">
+<div class="brand">STANSPACE<span> ♡</span></div>
+<h2 style="margin-top:16px">Your K-pop people are here.</h2>
+<p style="color:var(--muted);font-size:13px">One account. All your fandoms. Your own little corner.</p>
+<div class="auth-tabs">
+<button class="${mode==="login"?"active":""}" onclick="showAuth('login')">Log in</button>
+<button class="${mode==="signup"?"active":""}" onclick="showAuth('signup')">Create account</button>
+</div>
+${message?`<div class="notice">${esc(message)}</div>`:""}
+<form id="authForm">
+<div id="signupFields" class="${mode==="signup"?"":"hidden"}">
+<label class="label">Display name</label>
+<input class="field" id="displayName" maxlength="40" placeholder="Your display name">
+<label class="label">Username</label>
+<input class="field" id="username" maxlength="20" placeholder="your_username">
+<label class="label">Country</label>
+<input class="field" id="country" placeholder="India">
+<label class="label">Choose your fandoms</label>
+<input class="field" id="fandomSearch" placeholder="Search fandoms..." oninput="filterFandoms()">
+<div class="fandom-options" id="fandomOptions">
+${FANDOMS.map(([f,g])=>`<label class="fandom-option">
+<input type="checkbox" value="${esc(f)}" onchange="this.parentElement.classList.toggle('selected',this.checked)">
+<span><b>${esc(f)}</b><br><small>${esc(g)}</small></span>
+</label>`).join("")}
+</div></div>
+<label class="label">Email address</label>
+<input class="field" id="email" type="email" required placeholder="you@example.com">
+<label class="label">Password</label>
+<input class="field" id="password" type="password" minlength="8" required placeholder="At least 8 characters">
+<button class="btn" style="width:100%" type="submit">${mode==="login"?"Log in ♡":"Create my account ♡"}</button>
+</form>
+<div class="notice">Please use a valid email address. If email confirmation is enabled, check your inbox after registering.</div>
+</div></div>`;
+$("authForm").onsubmit=e=>authenticate(e,mode);
+}
+function filterFandoms(){
+const q=$("fandomSearch").value.toLowerCase();
+document.querySelectorAll("#fandomOptions label").forEach(el=>{
+el.style.display=el.innerText.toLowerCase().includes(q)?"flex":"none";
+});
+}
+async function authenticate(e,mode){
+e.preventDefault();
+const email=$("email").value.trim(),password=$("password").value;
+let result;
+if(mode==="login"){
+result=await db.auth.signInWithPassword({email,password});
+}else{
+const username=$("username").value.trim().toLowerCase();
+const display_name=$("displayName").value.trim();
+const country=$("country").value.trim();
+const fandoms=selectedFandomNames();
+if(!/^[a-z0-9_]{3,20}$/.test(username)){toast("Username must be 3–20 characters: letters, numbers or underscores.");return}
+if(!display_name){toast("Please enter a display name.");return}
+if(!fandoms.length){toast("Choose at least one fandom.");return}
+result=await db.auth.signUp({email,password,options:{data:{username,display_name,country,fandoms}}});
+if(!result.error&&!result.data.session){
+showAuth("login","Your account request was submitted! Check your email to confirm your account, then log in.");
+return;
+}}
+if(result.error){toast(result.error.message);return}
+session=result.data.session;
+if(session)await loadApp();
+}
+
+// LOAD USER DATA
+async function loadApp(){
+const {data:{user},error:userError}=await db.auth.getUser();
+if(userError||!user){showAuth("login");return}
+currentUser=user;
+const {data:p,error:profileError}=await db.from("profiles").select("*").eq("id",user.id).single();
+if(profileError){toast("Could not load your profile: "+profileError.message);return}
+profile=p;
+const {data:members,error:memberError}=await db.from("user_fandoms").select("fandom_id,fandoms(name)").eq("user_id",user.id);
+if(memberError){toast("Could not load your fandoms.");return}
+myFandoms=(members||[]).map(x=>x.fandoms?.name).filter(Boolean);
+await loadPosts();
+render();
+}
+
+// Load posts and create temporary display links for private images
+async function loadPosts(){
+const {data,error}=await db.from("posts")
+.select("*,profiles(username,display_name,avatar_url),fandoms(name)")
+.order("created_at",{ascending:false}).limit(100);
+if(error){toast("Could not load posts: "+error.message);posts=[];return}
+posts=data||[];
+
+for(const post of posts){
+post.imageDisplayUrl=null;
+if(post.image_url){
+const {data:imageData,error:imageError}=await db.storage
+.from("stanspace-images").createSignedUrl(post.image_url,3600);
+if(!imageError&&imageData)post.imageDisplayUrl=imageData.signedUrl;
+}
+}
+if(posts.length){
+const ids=posts.map(p=>p.id);
+const [l,c]=await Promise.all([
+db.from("likes").select("post_id,user_id").in("post_id",ids),
+db.from("comments").select("id,post_id,user_id,content,created_at,profiles(username,display_name)").in("post_id",ids).order("created_at")
+]);
+likes=l.data||[];
+comments=c.data||[];
+}else{likes=[];comments=[]}
+}
+
+// NAVIGATION
+function navButton(icon,label,page){
+return `<button class="navbtn ${currentPage===page?"active":""}" onclick="showPage('${page}')"><span>${icon}</span>${label}</button>`;
+}
+function render(){
+$("app").innerHTML=`
+<header class="topbar">
+<div class="brand" onclick="showPage('home')" style="cursor:pointer">STANSPACE<span> ♡</span></div>
+<div style="display:flex;align-items:center;gap:12px">
+<span style="font-size:12px;color:var(--muted)">@${esc(profile.username)}</span>${avatar(profile.display_name)}
+</div></header>
+<div class="layout">
+<aside class="sidebar"><div class="navbox">
+${navButton("⌂","Home","home")}
+${navButton("♡","My fandoms","fandoms")}
+${navButton("⌕","Explore","explore")}
+${navButton("▤","My profile","profile")}
+${navButton("⚙","Settings","settings")}
+<div class="side-title">YOUR FANDOMS</div>
+${myFandoms.slice(0,8).map(f=>`<div class="mini-community" onclick="openFandom('${esc(f)}')"><div class="dot">${esc(f.slice(0,2))}</div><span>${esc(f)}</span></div>`).join("")}
+</div></aside>
+<main class="main" id="pageContent"></main>
+<aside class="rightbar">
+<div class="card"><b style="font-size:13px">Your little corner ♡</b>
+<p class="sub">A space made for K-pop fans, by K-pop fans.</p>
+<div class="notice">Be kind, respect other fans and keep the space welcoming.</div></div>
+<div class="card"><b style="font-size:13px">Your fandoms</b>
+<p class="sub">${myFandoms.length} communities joined</p>
+<button class="btn secondary" style="width:100%" onclick="showPage('fandoms')">Explore your fandoms</button></div>
+</aside></div>
+<nav class="mobile-nav">
+<button onclick="showPage('home')"><span>⌂</span>Home</button>
+<button onclick="showPage('fandoms')"><span>♡</span>Fandoms</button>
+<button onclick="showPage('explore')"><span>⌕</span>Explore</button>
+<button onclick="showPage('profile')"><span>♙</span>Profile</button>
+<button onclick="showPage('settings')"><span>⚙</span>Settings</button>
+</nav>`;
+showPage(currentPage);
+}
+function showPage(page){
+currentPage=page;
+if(!$("pageContent"))return;
+const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,profile:renderProfile,settings:renderSettings};
+(pages[page]||renderHome)();
+document.querySelectorAll(".navbtn").forEach(b=>{
+b.classList.toggle("active",b.getAttribute("onclick")===`showPage('${page}')`);
+});
+}
+
+// PHOTO PICKER
+function choosePhoto(input){
+const file=input.files?.[0];
+if(!file)return;
+if(!file.type.startsWith("image/")){
+toast("Please choose an image file.");
+input.value="";return;
+}
+if(file.size>5*1024*1024){
+toast("Your photo must be smaller than 5 MB.");
+input.value="";return;
+}
+if(previewUrl)URL.revokeObjectURL(previewUrl);
+selectedPhoto=file;
+previewUrl=URL.createObjectURL(file);
+const preview=$("photoPreview");
+preview.innerHTML=`<img src="${previewUrl}" alt="Photo preview">
+<button class="remove-photo" type="button" onclick="removePhoto()">×</button>`;
+preview.style.display="block";
+}
+function removePhoto(){
+selectedPhoto=null;
+if(previewUrl)URL.revokeObjectURL(previewUrl);
+previewUrl=null;
+const input=$("photoInput");
+if(input)input.value="";
+const preview=$("photoPreview");
+if(preview){preview.innerHTML="";preview.style.display="none"}
+}
+
+// POST COMPOSER
+function composer(){
+return `<div class="card">
+<div class="composer">${avatar(profile.display_name)}
+<div style="flex:1;min-width:0">
+<textarea id="postContent" maxlength="2000" placeholder="What's happening in your K-pop world? ♡"></textarea>
+<div id="photoPreview" class="photo-preview"></div>
+<div class="composer-bottom">
+<div class="photo-tools">
+<label class="photo-button" for="photoInput">＋ Add photo</label>
+<input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onchange="choosePhoto(this)">
+<span class="sub">Up to 5 MB</span>
+</div>
+<button class="btn" id="postButton" onclick="createPost()">Post ♡</button>
+</div></div></div></div>`;
+}
+
+// Create a text post, photo post, or photo + caption post
+async function createPost(fandom=null){
+const content=$("postContent")?.value.trim()||"";
+const file=selectedPhoto;
+if(!content&&!file){toast("Write something or add a photo first!");return}
+
+const button=$("postButton");
+if(button){button.disabled=true;button.textContent="Posting..."}
+let imagePath=null;
+
 try{
- state=JSON.parse(localStorage.getItem("stanspace_data"))||starter;
-}catch(e){state=starter;}
-
-let page="home";
-let activeFandom="ATINY";
-let query="";
-
-function save(){
- localStorage.setItem("stanspace_data",JSON.stringify(state));
- renderSide();
+if(file){
+const extension=file.name.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+imagePath=`${currentUser.id}/${crypto.randomUUID()}.${extension}`;
+const {error:uploadError}=await db.storage.from("stanspace-images")
+.upload(imagePath,file,{contentType:file.type,upsert:false});
+if(uploadError)throw uploadError;
 }
 
-function esc(s){
- return String(s??"").replace(/[&<>"']/g,c=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- }[c]));
+const {error}=await db.from("posts").insert({
+user_id:currentUser.id,
+content:content,
+image_url:imagePath,
+fandom_id:null
+});
+if(error){
+if(imagePath)await db.storage.from("stanspace-images").remove([imagePath]);
+throw error;
 }
 
-function groupOf(f){
- return FANDOMS.find(x=>x[0]===f)?.[1]||f;
+removePhoto();
+toast("Your post is live ♡");
+await loadPosts();
+if(fandom)openFandom(fandom);
+else if(currentPage==="profile")renderProfile();
+else renderHome();
+}catch(error){
+toast("Could not publish: "+error.message);
+if(button){button.disabled=false;button.textContent="Post ♡"}
+}
 }
 
-function avatar(u,size=40){
- return `<div class="avatar" style="width:${size}px;height:${size}px">
- ${u.avatar?`<img src="${u.avatar}">`:esc((u.name||"S")[0].toUpperCase())}
- </div>`;
+// POST CARDS
+function postCard(post){
+const author=post.profiles?.display_name||post.profiles?.username||"K-pop fan";
+const username=post.profiles?.username||"fan";
+const fandom=post.fandoms?.name;
+const liked=likes.some(x=>x.post_id===post.id&&x.user_id===currentUser.id);
+const postComments=comments.filter(c=>c.post_id===post.id);
+return `<article class="card">
+<div class="post-head">${avatar(author)}
+<div style="flex:1">
+<div class="post-name">${esc(author)}</div>
+<div class="post-meta">@${esc(username)} · ${formatDate(post.created_at)}</div>
+</div>
+${fandom?`<span class="tag">${esc(fandom)}</span>`:""}
+${post.user_id===currentUser.id?`<button class="action" onclick="deletePost('${post.id}')">•••</button>`:""}
+</div>
+${post.content?`<div class="post-text">${esc(post.content)}</div>`:""}
+${post.imageDisplayUrl?`<img class="post-image" src="${esc(post.imageDisplayUrl)}" alt="Photo shared by ${esc(author)}" loading="lazy">`:""}
+<div class="post-actions">
+<button class="action ${liked?"liked":""}" onclick="toggleLike('${post.id}')">${liked?"♥":"♡"} ${likes.filter(x=>x.post_id===post.id).length} Likes</button>
+<button class="action" onclick="toggleComments('${post.id}')">♡ ${postComments.length} Comments</button>
+</div>
+<div id="comments-${post.id}" class="hidden">
+${postComments.map(c=>`<div class="comment"><b>@${esc(c.profiles?.username||"fan")}</b> ${esc(c.content)}</div>`).join("")}
+<div class="comment-row">
+<input id="comment-${post.id}" maxlength="500" placeholder="Write a comment...">
+<button class="btn" onclick="addComment('${post.id}')">Send</button>
+</div></div></article>`;
+}
+function toggleComments(id){$("comments-"+id).classList.toggle("hidden")}
+async function toggleLike(postId){
+const existing=likes.find(x=>x.post_id===postId&&x.user_id===currentUser.id);
+const result=existing?
+await db.from("likes").delete().eq("post_id",postId).eq("user_id",currentUser.id):
+await db.from("likes").insert({post_id:postId,user_id:currentUser.id});
+if(result.error){toast(result.error.message);return}
+await loadPosts();refreshCurrentFeed();
+}
+async function addComment(postId){
+const input=$("comment-"+postId),content=input.value.trim();
+if(!content)return;
+const {error}=await db.from("comments").insert({post_id:postId,user_id:currentUser.id,content});
+if(error){toast(error.message);return}
+await loadPosts();refreshCurrentFeed();
+$("comments-"+postId)?.classList.remove("hidden");
+}
+async function deletePost(id){
+if(!confirm("Delete this post?"))return;
+const post=posts.find(p=>p.id===id);
+const {error}=await db.from("posts").delete().eq("id",id).eq("user_id",currentUser.id);
+if(error){toast(error.message);return}
+if(post?.image_url){
+const {error:removeError}=await db.storage.from("stanspace-images").remove([post.image_url]);
+if(removeError)console.warn("Photo cleanup failed:",removeError.message);
+}
+await loadPosts();refreshCurrentFeed();toast("Post deleted.");
+}
+function refreshCurrentFeed(){
+if(currentPage==="home")renderHome();
+else if(currentPage==="profile")renderProfile();
+else if(currentPage==="fandoms"&&activeFandom)renderCommunity(activeFandom);
+else if(currentPage==="community"&&activeFandom)renderCommunity(activeFandom);
 }
 
-function toast(t){
- document.getElementById("toastRoot").innerHTML=`<div class="toast">${esc(t)}</div>`;
- setTimeout(()=>document.getElementById("toastRoot").innerHTML="",2200);
-}
-
-function renderSide(){
- const user=state.user;
- document.getElementById("topAvatar").innerHTML=
- user.avatar?`<img src="${user.avatar}">`:esc(user.name[0].toUpperCase());
-
- document.getElementById("sideFandoms").innerHTML=user.fandoms.map(f=>`
- <div class="mini-community" onclick="openFandom('${esc(f)}')">
- <span class="dot">${esc(f.slice(0,2))}</span>${esc(f)}
- </div>`).join("")||"<small>No fandoms joined</small>";
-
- document.getElementById("rightFandoms").innerHTML=user.fandoms.slice(0,4).map(f=>`
- <div class="mini-community">
- <span class="dot">${esc(f.slice(0,2))}</span>
- <div><b>${esc(f)}</b><br><small>${esc(groupOf(f))}</small></div>
- </div>`).join("");
-}
-
-function showPage(p){
- page=p;
- document.querySelectorAll(".navbtn").forEach(b=>{
-  b.classList.toggle("active",b.dataset.page===p);
- });
- render();
-}
-
-function openFandom(f){
- activeFandom=f;
- showPage("community");
-}
-
-// POST CREATION
-
-function composer(scope="personal",f=""){
- return `
- <div class="card">
-  <div class="composer">
-   ${avatar(state.user,42)}
-   <div style="flex:1">
-    <textarea id="postText" placeholder="${scope==="community"?"Share something with "+esc(f)+"...":"What's happening in your K-pop world?"}"></textarea>
-    <div class="composer-bottom">
-     <label class="action" style="cursor:pointer">
-      ▧ Add photo
-      <input id="postFile" type="file" accept="image/*" hidden onchange="previewPhoto(this)">
-     </label>
-     <span id="photoName" style="font-size:10px;color:#aaa"></span>
-     <button class="btn" onclick="createPost('${scope}','${esc(f)}')">Post ♡</button>
-    </div>
-    <div id="photoPreview"></div>
-   </div>
-  </div>
- </div>`;
-}
-
-function previewPhoto(input){
- let file=input.files[0];
- if(!file)return;
- if(file.size>2*1024*1024){
-  toast("Please choose an image under 2 MB.");
-  input.value="";
-  return;
- }
- let reader=new FileReader();
- reader.onload=()=>{
-  document.getElementById("photoPreview").innerHTML=
-  `<img src="${reader.result}" style="max-width:120px;max-height:90px;border-radius:10px;margin-top:8px">`;
-  document.getElementById("photoName").textContent=file.name;
- };
- reader.readAsDataURL(file);
-}
-
-function createPost(scope,f=""){
- let text=document.getElementById("postText").value.trim();
- let file=document.getElementById("postFile").files[0];
-
- if(!text&&!file){
-  toast("Write something or add a photo first ♡");
-  return;
- }
-
- function finish(image=""){
-  state.posts.unshift({
-   id:"p"+Date.now(),
-   author:{...state.user},
-   text,
-   image,
-   scope,
-   fandom:f,
-   time:"Just now",
-   likes:0
-  });
-  save();
-  render();
-  toast("Your post is up! ♡");
- }
-
- if(file){
-  let reader=new FileReader();
-  reader.onload=()=>finish(reader.result);
-  reader.readAsDataURL(file);
- }else finish();
-}
-
-// POST DISPLAY
-
-function postCard(p){
- let liked=state.likes.includes(p.id);
- let comments=state.comments[p.id]||[];
-
- return `
- <article class="card">
-  <div class="post-head">
-   ${avatar(p.author,40)}
-   <div style="flex:1">
-    <div class="post-name">${esc(p.author.name)}
-     <span style="font-weight:normal;color:#a297ad">@${esc(p.author.username)}</span>
-    </div>
-    <div class="post-meta">${esc(p.time)} ·
-     ${p.scope==="community"?`<span class="tag">${esc(p.fandom)}</span>`:"Personal post"}
-    </div>
-   </div>
-   ${p.author.username===state.user.username?
-   `<button class="action" onclick="deletePost('${p.id}')">Delete</button>`:""}
-  </div>
-
-  <div class="post-text">${esc(p.text)}</div>
-  ${p.image?`<img class="post-img" src="${p.image}">`:""}
-
-  <div class="post-actions">
-   <button class="action ${liked?"liked":""}" onclick="likePost('${p.id}')">
-    ${liked?"♥":"♡"} ${p.likes+(liked?1:0)} Likes
-   </button>
-   <button class="action" onclick="document.getElementById('comment-${p.id}').focus()">
-    ♧ ${comments.length} Comments
-   </button>
-  </div>
-
-  ${comments.map(c=>`
-   <div class="comment"><b>${esc(c.user)}:</b> ${esc(c.text)}</div>
-  `).join("")}
-
-  <div class="comment-row">
-   <input id="comment-${p.id}" placeholder="Write a comment...">
-   <button class="btn secondary" onclick="addComment('${p.id}')">Send</button>
-  </div>
- </article>`;
-}
-
-function likePost(id){
- if(state.likes.includes(id)){
-  state.likes=state.likes.filter(x=>x!==id);
- }else{
-  state.likes.push(id);
- }
- save();
- render();
-}
-
-function addComment(id){
- let input=document.getElementById("comment-"+id);
- let text=input.value.trim();
- if(!text)return;
-
- if(!state.comments[id])state.comments[id]=[];
- state.comments[id].push({
-  user:state.user.username,
-  text:text
- });
- save();
- render();
-}
-
-function deletePost(id){
- if(confirm("Delete this post?")){
-  state.posts=state.posts.filter(p=>p.id!==id);
-  save();
-  render();
- }
-}
-
-// HOME PAGE
-
+// HOME
 function renderHome(){
- let posts=state.posts.filter(p=>
-  p.scope==="personal"||state.user.fandoms.includes(p.fandom)
- );
-
- return `
- <div class="page-head">
-  <div><h1>Your home ♡</h1>
-  <div class="sub">A little K-pop corner made just for you.</div></div>
-  <span class="tag">${state.user.fandoms.length} fandoms</span>
- </div>
- ${composer()}
- ${posts.length?posts.map(postCard).join(""):`
- <div class="card empty">
-  <div class="big">♡</div>
-  <b>Your feed is waiting for its first post.</b>
-  <p>Share a thought, photo or fandom appreciation!</p>
- </div>`}`;
+$("pageContent").innerHTML=`
+<div class="page-head"><div><h1>Your feed ♡</h1><div class="sub">A little bit of all your fandom worlds.</div></div></div>
+${composer()}
+${posts.length?posts.map(postCard).join(""):`<div class="card empty"><div class="big">♡</div><h3>Your feed is waiting!</h3><p>Be the first to share something.</p></div>`}`;
 }
 
-// FANDOM COMMUNITY PAGE
-
-function renderCommunity(){
- let f=activeFandom;
-
- if(!state.user.fandoms.includes(f)){
-  return `<div class="card empty">
-   <div class="big">♡</div>
-   <h3>Join this fandom first</h3>
-   <button class="btn" onclick="toggleFandom('${esc(f)}')">Join ${esc(f)}</button>
-  </div>`;
- }
-
- let posts=state.posts.filter(p=>p.scope==="community"&&p.fandom===f);
-
- return `
- <div class="community-hero">
-  <span class="tag">FANDOM COMMUNITY</span>
-  <h2>${esc(f)} ♡</h2>
-  <p>${esc(groupOf(f))} fans from around the world.</p>
- </div>
- ${composer("community",f)}
- ${posts.length?posts.map(postCard).join(""):`
- <div class="card empty">
-  <div class="big">✧</div>
-  <b>It's quiet in here... for now.</b>
-  <p>Be the first to post in ${esc(f)}!</p>
- </div>`}`;
-}
-
-// MY FANDOMS
-
+// FANDOMS
 function renderFandoms(){
- return `
- <div class="page-head">
-  <div><h1>My fandoms ♡</h1>
-  <div class="sub">Your communities, all in one place.</div></div>
-  <button class="btn" onclick="showPage('explore')">＋ Add fandoms</button>
- </div>
- <div class="community-grid">
- ${state.user.fandoms.map(f=>`
-  <div class="community-tile" onclick="openFandom('${esc(f)}')">
-   <div class="tile-icon">${esc(f.slice(0,2))}</div>
-   <strong>${esc(f)}</strong>
-   <small>${esc(groupOf(f))}</small>
-   <p style="font-size:10px;color:#9474bd">Open community →</p>
-  </div>`).join("")}
- </div>
- ${state.user.fandoms.length?"":'<div class="card empty">You have not joined any fandoms yet.</div>'}`;
+$("pageContent").innerHTML=`
+<div class="page-head"><div><h1>My fandoms ♡</h1><div class="sub">Communities you've joined.</div></div>
+<button class="btn" onclick="showPage('explore')">Find more +</button></div>
+<div class="community-grid">${myFandoms.map(f=>fandomTile(f,true)).join("")}</div>
+${myFandoms.length?"":`<div class="card empty"><div class="big">♡</div><h3>No fandoms yet</h3><p>Find your people in Explore.</p></div>`}`;
+}
+function fandomTile(f,joined=false){
+const group=fandomName(f);
+return `<div class="community-tile" onclick="openFandom('${esc(f)}')" style="cursor:pointer">
+<div class="tile-icon">${esc(f.slice(0,2))}</div>
+<strong>${esc(f)}</strong><small>${esc(group)}</small>
+<div style="margin-top:10px"><span class="tag">${joined?"Joined ♡":"Explore"}</span></div></div>`;
+}
+function openFandom(f){activeFandom=f;currentPage="community";renderCommunity(f)}
+function renderCommunity(f){
+const group=fandomName(f),isMember=myFandoms.includes(f);
+const fandomPosts=posts.filter(p=>p.fandoms?.name===f);
+$("pageContent").innerHTML=`
+<div class="community-hero"><span class="tag">K-POP COMMUNITY</span>
+<h2>${esc(f)} ♡</h2><p>${esc(group)} fans, this is your space.</p>
+<div style="margin-top:15px"><button class="btn ${isMember?"secondary":""}" onclick="toggleFandom('${esc(f)}')">${isMember?"Leave fandom":"Join fandom ♡"}</button></div></div>
+${isMember?composer():`<div class="card"><p>Join this fandom to participate in its community.</p></div>`}
+${fandomPosts.length?fandomPosts.map(postCard).join(""):`<div class="card empty"><div class="big">♡</div><h3>It's quiet here!</h3><p>Community posts will appear here.</p></div>`}`;
+}
+async function toggleFandom(f){
+if(myFandoms.includes(f)){
+if(!confirm(`Leave ${f}?`))return;
+const {data:row,error:findError}=await db.from("fandoms").select("id").eq("name",f).single();
+if(findError){toast(findError.message);return}
+const {error}=await db.from("user_fandoms").delete().eq("user_id",currentUser.id).eq("fandom_id",row.id);
+if(error){toast(error.message);return}
+}else{
+const {data:row,error:findError}=await db.from("fandoms").select("id").eq("name",f).single();
+if(findError){toast(findError.message);return}
+const {error}=await db.from("user_fandoms").insert({user_id:currentUser.id,fandom_id:row.id});
+if(error){toast(error.message);return}
+}
+const {data:members}=await db.from("user_fandoms").select("fandoms(name)").eq("user_id",currentUser.id);
+myFandoms=(members||[]).map(x=>x.fandoms?.name).filter(Boolean);
+render();
+if(currentPage==="community")openFandom(f);
+toast(myFandoms.includes(f)?"Joined "+f+" ♡":"Left "+f);
 }
 
 // EXPLORE
-
 function renderExplore(){
- let list=FANDOMS.filter(x=>
-  (x[0]+" "+x[1]).toLowerCase().includes(query.toLowerCase())
- );
-
- return `
- <div class="page-head">
-  <div><h1>Explore fandoms ✧</h1>
-  <div class="sub">Find your people. Choose as many as you like.</div></div>
- </div>
- <input class="search" placeholder="Search fandom or group..."
- value="${esc(query)}" oninput="query=this.value;updateExplore()">
- <div class="community-grid" id="exploreGrid">
- ${list.map(([f,g])=>fandomTile(f,g)).join("")}
- </div>`;
+$("pageContent").innerHTML=`
+<div class="page-head"><div><h1>Explore ♡</h1><div class="sub">Find your K-pop people.</div></div></div>
+<input class="search" id="exploreSearch" placeholder="Search groups or fandoms..." oninput="updateExplore()">
+<div class="community-grid" id="exploreGrid"></div>`;
+updateExplore();
 }
-
-function fandomTile(f,g){
- let joined=state.user.fandoms.includes(f);
- return `
- <div class="community-tile">
-  <div class="tile-icon">${esc(f.slice(0,2))}</div>
-  <strong>${esc(f)}</strong>
-  <small>${esc(g)}</small>
-  <button class="btn ${joined?"secondary":""}" style="width:100%;padding:8px;margin-top:10px;font-size:10px"
-  onclick="toggleFandom('${esc(f)}')">
-   ${joined?"✓ Joined":"＋ Join fandom"}
-  </button>
- </div>`;
-}
-
 function updateExplore(){
- let grid=document.getElementById("exploreGrid");
- if(!grid)return;
- let list=FANDOMS.filter(x=>
-  (x[0]+" "+x[1]).toLowerCase().includes(query.toLowerCase())
- );
- grid.innerHTML=list.map(([f,g])=>fandomTile(f,g)).join("");
-}
-
-function toggleFandom(f){
- if(state.user.fandoms.includes(f)){
-  state.user.fandoms=state.user.fandoms.filter(x=>x!==f);
- }else{
-  state.user.fandoms.push(f);
- }
- save();
- render();
- toast(state.user.fandoms.includes(f)?"Welcome to "+f+"! ♡":"You left "+f+".");
+const q=($("exploreSearch")?.value||"").toLowerCase();
+const filtered=FANDOMS.filter(([f,g])=>(f+" "+g).toLowerCase().includes(q));
+$("exploreGrid").innerHTML=filtered.map(([f])=>fandomTile(f,myFandoms.includes(f))).join("");
 }
 
 // PROFILE
-
 function renderProfile(){
- let u=state.user;
- let posts=state.posts.filter(p=>
-  p.scope==="personal"&&p.author.username===u.username
- );
-
- return `
- <div class="card" style="padding:0;overflow:hidden">
-  <div class="profile-cover"></div>
-  <div class="profile-card">
-   <div class="profile-top">
-    ${avatar(u,80)}
-    <button class="btn secondary" onclick="editProfile()">Edit profile</button>
-   </div>
-   <div class="profile-name">${esc(u.name)}</div>
-   <div class="sub">@${esc(u.username)} · ${u.private?"🔒 Private account":"🌎 Public account"} · ${esc(u.country)}</div>
-   <p class="profile-bio">${esc(u.bio)}</p>
-   <div class="stats">
-    <div><b>${posts.length}</b><span>Posts</span></div>
-    <div><b>0</b><span>Followers</span></div>
-    <div><b>0</b><span>Following</span></div>
-   </div>
-   <div style="font-size:10px;font-weight:bold;color:#8b7b9b;margin-bottom:8px">MY FANDOMS</div>
-   ${u.fandoms.map(f=>`<span class="tag" style="margin:0 4px 5px 0">${esc(f)}</span>`).join("")}
-  </div>
- </div>
- ${posts.length?posts.map(postCard).join(""):'<div class="card empty">Your personal posts will appear here.</div>'}`;
+const mine=posts.filter(p=>p.user_id===currentUser.id);
+$("pageContent").innerHTML=`
+<div class="card" style="padding:0;overflow:hidden">
+<div class="profile-cover"></div><div class="profile-card">
+<div class="profile-top">${avatar(profile.display_name)}
+<button class="btn secondary" onclick="editProfile()">Edit profile</button></div>
+<div class="profile-name">${esc(profile.display_name||profile.username)}</div>
+<div class="sub">@${esc(profile.username)} · ${esc(profile.country||"")}</div>
+<p class="profile-bio">${esc(profile.bio||"No bio yet. Add something about yourself ♡")}</p>
+<div class="stats"><div><b>${mine.length}</b><span>Posts</span></div><div><b>${myFandoms.length}</b><span>Fandoms</span></div></div>
+<div class="sub">MY FANDOMS</div>
+<div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${myFandoms.map(f=>`<span class="tag">${esc(f)}</span>`).join("")}</div>
+</div></div>
+<h3 style="font-size:16px">My posts</h3>
+${mine.length?mine.map(postCard).join(""):`<div class="card empty">You haven't posted anything yet ♡</div>`}`;
 }
-
 function editProfile(){
- document.getElementById("modalRoot").innerHTML=`
- <div class="modal-back" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-   <h2>Edit your profile ♡</h2>
-   <label class="label">Display name</label>
-   <input class="field" id="eName" value="${esc(state.user.name)}">
-   <label class="label">Username</label>
-   <input class="field" id="eUser" value="${esc(state.user.username)}">
-   <label class="label">Bio</label>
-   <textarea class="field" id="eBio" rows="3">${esc(state.user.bio)}</textarea>
-   <label class="label">Country</label>
-   <input class="field" id="eCountry" value="${esc(state.user.country)}">
-   <label class="label">Profile photo</label>
-   <input class="field" id="ePhoto" type="file" accept="image/*">
-   <button class="btn secondary" onclick="closeModal()">Cancel</button>
-   <button class="btn" onclick="saveProfile()">Save changes</button>
-  </div>
- </div>`;
+$("modalRoot").innerHTML=`
+<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">
+<h2>Edit profile ♡</h2><p>Make your little corner yours.</p>
+<label class="label">Display name</label><input class="field" id="editDisplay" maxlength="40" value="${esc(profile.display_name||"")}">
+<label class="label">Country</label><input class="field" id="editCountry" value="${esc(profile.country||"")}">
+<label class="label">Bio</label><textarea class="field" id="editBio" maxlength="250" rows="4">${esc(profile.bio||"")}</textarea>
+<div style="display:flex;gap:8px;justify-content:flex-end">
+<button class="btn secondary" onclick="closeModal()">Cancel</button>
+<button class="btn" onclick="saveProfile()">Save changes</button>
+</div></div></div>`;
 }
-
-function saveProfile(){
- state.user.name=document.getElementById("eName").value.trim()||"Starlight";
- state.user.username=document.getElementById("eUser").value.trim().replace(/\s/g,"")||"starlight";
- state.user.bio=document.getElementById("eBio").value;
- state.user.country=document.getElementById("eCountry").value;
-
- let file=document.getElementById("ePhoto").files[0];
-
- function done(){
-  save();
-  closeModal();
-  render();
-  toast("Profile updated ♡");
- }
-
- if(file){
-  if(file.size>2*1024*1024){
-   toast("Choose a photo under 2 MB.");
-   return;
-  }
-  let reader=new FileReader();
-  reader.onload=()=>{
-   state.user.avatar=reader.result;
-   done();
-  };
-  reader.readAsDataURL(file);
- }else done();
+async function saveProfile(){
+const updates={display_name:$("editDisplay").value.trim(),country:$("editCountry").value.trim(),bio:$("editBio").value.trim()};
+if(!updates.display_name){toast("Display name cannot be empty.");return}
+const {error}=await db.from("profiles").update(updates).eq("id",currentUser.id);
+if(error){toast(error.message);return}
+profile={...profile,...updates};closeModal();renderProfile();toast("Profile updated ♡");
 }
 
 // SETTINGS
-
 function renderSettings(){
- return `
- <div class="page-head">
-  <div><h1>Settings ⚙</h1>
-  <div class="sub">Your account, your boundaries.</div></div>
- </div>
- <div class="card">
-  <h3>Privacy</h3>
-  <div class="settings-row">
-   <div>
-    <b>Private account</b>
-    <div class="sub">Prototype setting for your personal account.</div>
-   </div>
-   <input type="checkbox" ${state.user.private?"checked":""}
-   onchange="state.user.private=this.checked;save();render()">
-  </div>
-  <div class="settings-row">
-   <b>Manage fandoms</b>
-   <button class="btn secondary" onclick="showPage('explore')">Manage</button>
-  </div>
- </div>
- <div class="card">
-  <h3>Your demo data</h3>
-  <p class="sub">Your information is stored in this browser on this device.</p>
-  <button class="btn secondary" onclick="exportData()">Export data</button>
-  <button class="btn secondary" onclick="resetDemo()">Reset demo</button>
- </div>
- <div class="notice">
-  IMPORTANT: The privacy switch is only a visual prototype setting.
-  This version has no online accounts or server-side privacy protection.
- </div>`;
+$("pageContent").innerHTML=`
+<div class="page-head"><div><h1>Settings</h1><div class="sub">Your account and preferences.</div></div></div>
+<div class="card"><h3 style="margin-top:0">Account</h3>
+<div class="settings-row"><span>Email</span><b>${esc(currentUser.email)}</b></div>
+<div class="settings-row"><span>Username</span><b>@${esc(profile.username)}</b></div>
+<div class="settings-row"><span>Account created</span><b>${formatDate(currentUser.created_at)}</b></div></div>
+<div class="card"><h3 style="margin-top:0">Your STANSPACE</h3>
+<div class="settings-row"><span>Joined fandoms</span><b>${myFandoms.length}</b></div>
+<div class="settings-row"><span>Community guidelines</span><span>Be kind ♡</span></div></div>
+<div class="card"><h3 style="margin-top:0">Sign out</h3>
+<p class="sub">Sign out of your STANSPACE account on this device.</p>
+<button class="btn danger" onclick="signOut()">Sign out</button></div>`;
+}
+async function signOut(){
+const {error}=await db.auth.signOut();
+if(error){toast(error.message);return}
+session=null;currentUser=null;profile=null;myFandoms=[];posts=[];
+showAuth("login");
 }
 
-function exportData(){
- let a=document.createElement("a");
- let blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
- a.href=URL.createObjectURL(blob);
- a.download="stanspace-data.json";
- a.click();
- URL.revokeObjectURL(a.href);
+// STARTUP
+async function start(){
+const {data,error}=await db.auth.getSession();
+if(error){showAuth("login",error.message);return}
+session=data.session;
+if(session)await loadApp();else showAuth("login");
+db.auth.onAuthStateChange((_event,newSession)=>{
+session=newSession;
+if(newSession&&!currentUser){setTimeout(()=>loadApp(),0)}
+else if(!newSession){
+currentUser=null;profile=null;myFandoms=[];posts=[];
+showAuth("login");
 }
-
-function resetDemo(){
- if(confirm("Reset this demo?")){
-  localStorage.removeItem("stanspace_data");
-  localStorage.removeItem("stanspace_setup_done");
-  location.reload();
- }
+});
 }
-
-// MESSAGES AND NOTIFICATIONS
-
-function renderMessages(){
- return `
- <div class="page-head"><div><h1>Messages ✉</h1>
- <div class="sub">Your conversations will live here.</div></div></div>
- <div class="card empty">
-  <div class="big">✉</div>
-  <b>DMs and group chats are coming next.</b>
-  <p>Real-time messaging requires online accounts and a database.</p>
- </div>`;
-}
-
-function renderNotifications(){
- return `
- <div class="page-head"><div><h1>Notifications ♡</h1>
- <div class="sub">The latest from your fandom world.</div></div></div>
- <div class="card empty">
-  <div class="big">✧</div>
-  <b>You're all caught up!</b>
-  <p>Likes, comments and follow activity will appear here as features are connected.</p>
- </div>`;
-}
-
-// PAGE RENDERER
-
-function render(){
- renderSide();
-
- const views={
-  home:renderHome,
-  community:renderCommunity,
-  fandoms:renderFandoms,
-  explore:renderExplore,
-  profile:renderProfile,
-  settings:renderSettings,
-  messages:renderMessages,
-  notifications:renderNotifications
- };
-
- document.getElementById("main").innerHTML=(views[page]||renderHome)();
-}
-
-function closeModal(){
- document.getElementById("modalRoot").innerHTML="";
-}
-
-// FIRST-TIME ACCOUNT SETUP
-
-function onboarding(){
- document.getElementById("modalRoot").innerHTML=`
- <div class="modal-back">
-  <div class="modal">
-   <div class="brand">STANSPACE<span> ♡</span></div>
-   <h2 style="margin-top:16px">Welcome to your K-pop corner!</h2>
-   <p>Choose your fandoms. You can select as many as you want.</p>
-
-   <label class="label">Display name</label>
-   <input class="field" id="newName" value="${esc(state.user.name)}">
-
-   <label class="label">Username</label>
-   <input class="field" id="newUser" value="${esc(state.user.username)}">
-
-   <label class="label">Country</label>
-   <input class="field" id="newCountry" value="${esc(state.user.country)}">
-
-   <label class="label">Choose fandoms</label>
-   <input class="field" id="fSearch" placeholder="Search fandoms..." oninput="filterOptions()">
-
-   <div class="fandom-options" id="fOptions">
-    ${FANDOMS.map(([f,g])=>`
-     <label class="fandom-option ${state.user.fandoms.includes(f)?"selected":""}">
-      <input type="checkbox" value="${esc(f)}"
-      ${state.user.fandoms.includes(f)?"checked":""}
-      onchange="this.parentElement.classList.toggle('selected',this.checked)">
-      <span><b>${esc(f)}</b><br><small>${esc(g)}</small></span>
-     </label>`).join("")}
-   </div>
-
-   <div class="notice">This is a local prototype setup, not real online registration.</div>
-   <button class="btn" style="width:100%" onclick="finishOnboarding()">Enter STANSPACE ♡</button>
-  </div>
- </div>`;
-}
-
-function filterOptions(){
- let q=document.getElementById("fSearch").value.toLowerCase();
- document.querySelectorAll("#fOptions label").forEach(x=>{
-  x.style.display=x.innerText.toLowerCase().includes(q)?"flex":"none";
- });
-}
-
-function finishOnboarding(){
- state.user.name=document.getElementById("newName").value.trim()||"Starlight";
- state.user.username=document.getElementById("newUser").value.trim().replace(/\s/g,"")||"starlight";
- state.user.country=document.getElementById("newCountry").value.trim()||"Not set";
-
- state.user.fandoms=[
-  ...document.querySelectorAll("#fOptions input:checked")
- ].map(x=>x.value);
-
- save();
- localStorage.setItem("stanspace_setup_done","yes");
- closeModal();
- render();
- toast("Welcome to STANSPACE! ♡");
-}
-
-// START APPLICATION
-
-if(!localStorage.getItem("stanspace_setup_done")){
- onboarding();
-}else{
- render();
-}
+start();
 </script>
 </body>
 </html>
