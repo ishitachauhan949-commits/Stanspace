@@ -1226,22 +1226,103 @@ showAuth("login");
 }
 
 // STARTUP
-async function start(){
-const {data,error}=await db.auth.getSession();
-if(error){showAuth("login",error.message);return}
-session=data.session;
-if(session)await loadApp();else showAuth("login");
-db.auth.onAuthStateChange((event,newSession)=>{
-session=newSession;
-if(event==="PASSWORD_RECOVERY"){recoveryMode=true;showResetPassword();return}
-if(newSession&&!currentUser&&!recoveryMode){setTimeout(()=>loadApp(),0)}
-else if(!newSession&&!recoveryMode){
-currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];notifications=[];
-messageRows=[];messagePeople={};unreadMessages=0;activeConversationId=null;
-showAuth("login");
-}
+
+let messageRealtimeChannel = null;
+
+
+function setupMessageRealtime(){
+  if(!currentUser) return;
+
+  if(messageRealtimeChannel){
+    db.removeChannel(messageRealtimeChannel);
+    messageRealtimeChannel = null;
+  }
+
+  messageRealtimeChannel = db
+    .channel("messages-" + currentUser.id)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages"
+      },
+      async (payload) => {
+        const newMessage = payload.new;
+
+console.log("REALTIME EVENT RECEIVED:", newMessage);
+
+        if(
+          newMessage.sender_id === currentUser.id ||
+          newMessage.receiver_id === currentUser.id
+        ){
+          if(currentPage === "messages"){
+            await renderMessages();
+          }else{
+            await loadUnreadMessages();
+            updateMessageBadges();
+          }
+        }
+      }
+    )
+    .subscribe((status) => {
+  console.log("Message realtime status:", status);
+  console.log("Realtime channel:", messageRealtimeChannel);
 });
 }
+async function start(){  const {data,error}=await db.auth.getSession();
+
+  if(error){
+    showAuth("login",error.message);
+    return;
+  }
+
+  session=data.session;
+
+  if(session){
+    await loadApp();
+    setupMessageRealtime();
+  }else{
+    showAuth("login");
+  }
+
+  db.auth.onAuthStateChange((event,newSession)=>{
+    session=newSession;
+
+    if(event==="PASSWORD_RECOVERY"){
+      recoveryMode=true;
+      showResetPassword();
+      return;
+    }
+
+    if(newSession&&!currentUser&&!recoveryMode){
+      setTimeout(async()=>{
+        await loadApp();
+        setupMessageRealtime();
+      },0);
+    }
+    else if(!newSession&&!recoveryMode){
+      if(messageRealtimeChannel){
+        db.removeChannel(messageRealtimeChannel);
+        messageRealtimeChannel=null;
+      }
+
+      currentUser=null;
+      profile=null;
+      myFandoms=[];
+      posts=[];
+      relationships=[];
+      notifications=[];
+      messageRows=[];
+      messagePeople={};
+      unreadMessages=0;
+      activeConversationId=null;
+
+      showAuth("login");
+    }
+  });
+}
+
 start();
 </script>
 </body>
