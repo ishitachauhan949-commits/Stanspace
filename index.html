@@ -1490,7 +1490,9 @@ async function updateReportStatus(reportId,status){
 
   toast("Submission status updated! ♡");
 }
+
 function showPage(page){
+
   currentPage=page;
   viewedProfile=null;
 
@@ -1505,6 +1507,7 @@ function showPage(page){
     messages:renderMessages,
     profile:renderProfile,
     settings:renderSettings,
+    blocked:renderBlockedAccounts,
     feedback:renderFeedback,
     admin:renderAdmin
   };
@@ -1512,7 +1515,10 @@ function showPage(page){
   (pages[page]||renderHome)();
 
   document.querySelectorAll(".navbtn").forEach(b=>
-    b.classList.toggle("active",b.getAttribute("onclick")===`showPage('${page}')`)
+    b.classList.toggle(
+      "active",
+      b.getAttribute("onclick")===`showPage('${page}')`
+    )
   );
 }
 // PHOTO PICKER
@@ -2290,7 +2296,8 @@ if(signedUrlError){
   }
 }
 // SETTINGS
-async function renderSettings(){
+
+function renderSettings(){
 
   $("pageContent").innerHTML=`
     <div class="page-head">
@@ -2302,24 +2309,50 @@ async function renderSettings(){
 
     <div class="card">
       <h3 style="margin-top:0">Account</h3>
-      <div class="settings-row"><span>Email</span><b>${esc(currentUser.email)}</b></div>
-      <div class="settings-row"><span>Username</span><b>@${esc(profile.username)}</b></div>
-      <div class="settings-row"><span>Account created</span><b>${formatDate(currentUser.created_at)}</b></div>
+      <div class="settings-row">
+        <span>Email</span>
+        <b>${esc(currentUser.email)}</b>
+      </div>
+      <div class="settings-row">
+        <span>Username</span>
+        <b>@${esc(profile.username)}</b>
+      </div>
+      <div class="settings-row">
+        <span>Account created</span>
+        <b>${formatDate(currentUser.created_at)}</b>
+      </div>
     </div>
 
     <div class="card">
       <h3 style="margin-top:0">Your STANSPACE</h3>
-      <div class="settings-row"><span>Joined fandoms</span><b>${myFandoms.length}</b></div>
-      <div class="settings-row"><span>Followers</span><b>${followerCount(currentUser.id)}</b></div>
-      <div class="settings-row"><span>Following</span><b>${followingCount(currentUser.id)}</b></div>
-      <div class="settings-row"><span>Community guidelines</span><span>Be kind ♡</span></div>
+      <div class="settings-row">
+        <span>Joined fandoms</span>
+        <b>${myFandoms.length}</b>
+      </div>
+      <div class="settings-row">
+        <span>Followers</span>
+        <b>${followerCount(currentUser.id)}</b>
+      </div>
+      <div class="settings-row">
+        <span>Following</span>
+        <b>${followingCount(currentUser.id)}</b>
+      </div>
+      <div class="settings-row">
+        <span>Community guidelines</span>
+        <span>Be kind ♡</span>
+      </div>
     </div>
 
-    <div class="card">
-      <h3 style="margin-top:0">Blocked Accounts</h3>
-      <p class="sub">Manage the accounts you have blocked.</p>
-      <div id="blockedAccountsList">
-        <p class="sub">Loading blocked accounts...</p>
+    <div class="card"
+      onclick="showPage('blocked')"
+      style="cursor:pointer">
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h3 style="margin-top:0">Blocked Accounts</h3>
+          <p class="sub">Manage the accounts you have blocked.</p>
+        </div>
+        <span style="font-size:22px">›</span>
       </div>
     </div>
 
@@ -2329,12 +2362,40 @@ async function renderSettings(){
       <button class="btn danger" onclick="signOut()">Sign out</button>
     </div>
   `;
+}
+
+
+async function renderBlockedAccounts(){
+
+  $("pageContent").innerHTML=`
+    <div class="page-head">
+      <div>
+        <h1>Blocked Accounts</h1>
+        <div class="sub">Accounts you have chosen to block.</div>
+      </div>
+    </div>
+
+    <button class="btn secondary"
+      onclick="showPage('settings')"
+      style="margin-bottom:15px">
+      ← Back to Settings
+    </button>
+
+    <div class="card">
+      <div id="blockedAccountsList">
+        <p class="sub">Loading blocked accounts...</p>
+      </div>
+    </div>
+  `;
 
   await loadBlockedAccounts();
 }
+
+
 async function loadBlockedAccounts(){
 
   const container=$("blockedAccountsList");
+
   if(!container || !currentUser)return;
 
   const {data:blocks,error}=await db
@@ -2344,12 +2405,14 @@ async function loadBlockedAccounts(){
 
   if(error){
     console.error(error);
-    container.innerHTML=`<p class="sub">Could not load blocked accounts.</p>`;
+    container.innerHTML=
+      `<p class="sub">Could not load blocked accounts.</p>`;
     return;
   }
 
-  if(!blocks.length){
-    container.innerHTML=`<p class="sub">You haven't blocked anyone. ♡</p>`;
+  if(!blocks || blocks.length===0){
+    container.innerHTML=
+      `<p class="sub">You haven't blocked anyone. ♡</p>`;
     return;
   }
 
@@ -2362,22 +2425,33 @@ async function loadBlockedAccounts(){
 
   if(userError){
     console.error(userError);
-    container.innerHTML=`<p class="sub">Could not load account details.</p>`;
+    container.innerHTML=
+      `<p class="sub">Could not load account details.</p>`;
     return;
   }
 
-  container.innerHTML=(users||[]).map(user=>`
+  if(!users || users.length===0){
+    container.innerHTML=
+      `<p class="sub">No account details could be found.</p>`;
+    return;
+  }
+
+  container.innerHTML=users.map(user=>`
     <div class="settings-row">
       <div>
         <b>${esc(user.display_name||user.username)}</b>
         <div class="sub">@${esc(user.username)}</div>
       </div>
-      <button class="btn secondary" onclick="unblockUser('${user.id}')">
+
+      <button class="btn secondary"
+        onclick="unblockUser('${user.id}')">
         Unblock
       </button>
     </div>
   `).join("");
 }
+
+
 async function unblockUser(userId){
 
   if(!currentUser)return;
@@ -2401,14 +2475,31 @@ async function unblockUser(userId){
 
   await loadBlockedAccounts();
 }
-async function signOut(){
-const {error}=await db.auth.signOut();
-if(error){toast(error.message);return}
-session=null;currentUser=null;profile=null;myFandoms=[];posts=[];relationships=[];notifications=[];
-messageRows=[];messagePeople={};unreadMessages=0;activeConversationId=null;
-showAuth("login");
-}
 
+
+async function signOut(){
+
+  const {error}=await db.auth.signOut();
+
+  if(error){
+    toast(error.message);
+    return;
+  }
+
+  session=null;
+  currentUser=null;
+  profile=null;
+  myFandoms=[];
+  posts=[];
+  relationships=[];
+  notifications=[];
+  messageRows=[];
+  messagePeople={};
+  unreadMessages=0;
+  activeConversationId=null;
+
+  showAuth("login");
+}
 // STARTUP
 
 let messageRealtimeChannel = null;
