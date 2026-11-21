@@ -1108,6 +1108,7 @@ ${navButton("♧","Notifications","notifications")}
 ${navButton("✉","Messages","messages")}
 ${navButton("▤","My profile","profile")}
 ${navButton("⚙","Settings","settings")}
+${navButton("♡","Feedback & Complaints","feedback")}
 <div class="side-title">YOUR FANDOMS</div>
 ${myFandoms.slice(0,8).map(f=>`<div class="mini-community" onclick="openFandom('${esc(f)}')"><div class="dot">${esc(f.slice(0,2))}</div><span>${esc(f)}</span></div>`).join("")}
 </div></aside>
@@ -1131,10 +1132,106 @@ ${myFandoms.slice(0,8).map(f=>`<div class="mini-community" onclick="openFandom('
 </nav>`;
 showPage(currentPage);
 }
+
+function renderFeedback(){
+  $("pageContent").innerHTML=`
+    <div class="page-head">
+      <div>
+        <h1>Feedback & Complaints ♡</h1>
+        <p class="sub">Help us make STANSPACE a better place for everyone.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>We'd love to hear from you!</h3>
+      <p class="sub">Share an idea, report a problem, or let us know how we can improve.</p>
+
+      <form id="feedbackForm" onsubmit="submitFeedback(event)">
+        <label>What would you like to do?</label>
+        <select id="reportType" class="input" required>
+          <option value="feedback">Share Feedback</option>
+          <option value="complaint">Submit a Complaint</option>
+        </select>
+
+        <label style="display:block;margin-top:18px">Category</label>
+        <select id="reportCategory" class="input" required>
+          <option value="">Choose a category</option>
+          <option value="Suggestion">Suggestion or idea</option>
+          <option value="Feature request">Feature request</option>
+          <option value="Bug or technical issue">Bug or technical issue</option>
+          <option value="Harassment or inappropriate behaviour">Harassment or inappropriate behaviour</option>
+          <option value="Account issue">Account issue</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <label style="display:block;margin-top:18px">Subject</label>
+        <input id="reportSubject" class="input" type="text"
+          placeholder="A short title for your message" maxlength="120" required>
+
+        <label style="display:block;margin-top:18px">Tell us more</label>
+        <textarea id="reportMessage" class="input" rows="6"
+          placeholder="Write your feedback or explain your complaint..."
+          maxlength="3000" required></textarea>
+
+        <button class="btn" id="reportSubmitButton" type="submit"
+          style="width:100%;margin-top:18px">
+          Submit ♡
+        </button>
+      </form>
+
+      <p class="sub" style="margin-top:16px">
+        Your submissions are private and can only be viewed by you and authorised administrators.
+      </p>
+    </div>
+  `;
+}
+
+async function submitFeedback(event){
+  event.preventDefault();
+
+  if(!currentUser){
+    toast("Please log in first.");
+    return;
+  }
+
+  const type=$("reportType").value;
+  const category=$("reportCategory").value;
+  const subject=$("reportSubject").value.trim();
+  const message=$("reportMessage").value.trim();
+  const button=$("reportSubmitButton");
+
+  if(!subject||!message||!category){
+    toast("Please complete all fields.");
+    return;
+  }
+
+  button.disabled=true;
+  button.textContent="Submitting...";
+
+  const {error}=await db.from("feedback_reports").insert({
+    user_id:currentUser.id,
+    type,
+    category,
+    subject,
+    message
+  });
+
+  button.disabled=false;
+  button.textContent="Submit ♡";
+
+  if(error){
+    console.error(error);
+    toast("Could not submit. Please try again.");
+    return;
+  }
+
+  $("feedbackForm").reset();
+  toast("Thank you! Your submission has been received. ♡");
+}
 function showPage(page){
 currentPage=page;viewedProfile=null;
 if(!$("pageContent"))return;
-const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,people:renderPeople,notifications:renderNotifications,messages:renderMessages,profile:renderProfile,settings:renderSettings};
+const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,people:renderPeople,notifications:renderNotifications,messages:renderMessages,profile:renderProfile,settings:renderSettings,feedback:renderFeedback};
 (pages[page]||renderHome)();
 document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.getAttribute("onclick")===`showPage('${page}')`));
 }
