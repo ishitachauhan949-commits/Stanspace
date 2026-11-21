@@ -805,6 +805,31 @@ async function renderNotifications(){
 
   await loadNotifications();
 
+  // Load incoming follow requests
+  const {data:requests,error:requestError}=await db
+    .from("follows")
+    .select("id,follower_id,created_at")
+    .eq("following_id",currentUser.id)
+    .eq("status","pending")
+    .order("created_at",{ascending:false});
+
+  let requestPeople=[];
+
+  if(requestError){
+    console.error("Follow requests:",requestError);
+  }else if(requests?.length){
+
+    const ids=requests.map(r=>r.follower_id);
+
+    const {data:people,error}=await db.from("profiles")
+      .select("id,username,display_name,avatar_url")
+      .in("id",ids);
+
+    if(!error){
+      requestPeople=people||[];
+    }
+  }
+
   $("pageContent").innerHTML=`
     <div class="page-head">
       <div>
@@ -814,6 +839,54 @@ async function renderNotifications(){
     </div>
 
     <div class="card">
+
+      <h3>Follow Requests ♡</h3>
+
+      ${
+        requests?.length
+        ? requests.map(r=>{
+          const person=requestPeople.find(p=>p.id===r.follower_id);
+
+          if(!person)return "";
+
+          return `
+            <div class="settings-row"
+              style="padding:14px 5px">
+
+              <div style="display:flex;align-items:center;gap:10px">
+                ${avatar(person.display_name||person.username)}
+
+                <div>
+                  <b>${esc(person.display_name||person.username)}</b>
+                  <div class="sub">@${esc(person.username)}</div>
+                  <div class="sub">Wants to follow you.</div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:7px;margin-top:10px">
+                <button class="btn"
+                  onclick="acceptFollowRequest('${r.id}')">
+                  Accept
+                </button>
+
+                <button class="btn secondary"
+                  onclick="rejectFollowRequest('${r.id}')">
+                  Reject
+                </button>
+              </div>
+
+            </div>
+          `;
+        }).join("")
+        : '<p class="sub">No pending follow requests. ♡</p>'
+      }
+
+    </div>
+
+    <div class="card" style="margin-top:15px">
+
+      <h3>Recent Activity</h3>
+
       ${
         notifications.length
         ? notifications.map(n=>`
@@ -825,6 +898,7 @@ async function renderNotifications(){
               <div style="font-size:22px">
                 ${notificationSymbol(n.type)}
               </div>
+
               <div>
                 <div>${notificationMessage(n)}</div>
                 <div class="sub">${formatDate(n.created_at)}</div>
@@ -832,12 +906,52 @@ async function renderNotifications(){
             </div>
 
             ${n.read_at?"":'<span class="nav-count">New</span>'}
+
           </div>
         `).join("")
         : '<p class="sub">You have no notifications yet. ♡</p>'
       }
+
     </div>
   `;
+}
+
+async function acceptFollowRequest(requestId){
+
+  const {error}=await db.from("follows")
+    .update({status:"accepted"})
+    .eq("id",requestId)
+    .eq("following_id",currentUser.id)
+    .eq("status","pending");
+
+  if(error){
+    toast("Could not accept request: "+error.message);
+    return;
+  }
+
+  await loadRelationships();
+  await renderNotifications();
+
+  toast("Follow request accepted ♡");
+}
+
+async function rejectFollowRequest(requestId){
+
+  const {error}=await db.from("follows")
+    .update({status:"rejected"})
+    .eq("id",requestId)
+    .eq("following_id",currentUser.id)
+    .eq("status","pending");
+
+  if(error){
+    toast("Could not reject request: "+error.message);
+    return;
+  }
+
+  await loadRelationships();
+  await renderNotifications();
+
+  toast("Follow request rejected.");
 }
 function notificationMessage(n){
 const name=n.actor?.display_name||n.actor?.username||"Someone";
