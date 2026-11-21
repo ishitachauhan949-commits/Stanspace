@@ -238,6 +238,206 @@ return [...document.querySelectorAll("#fandomOptions input:checked")].map(x=>x.v
 }
 
 // AUTHENTICATION
+
+function showWelcome(){
+  recoveryMode=false;
+
+  $("app").innerHTML=`
+  <style>
+    .welcome-screen{
+      min-height:100vh;
+      box-sizing:border-box;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:35px 20px;
+      background:var(--bg);
+      text-align:center;
+    }
+
+    .welcome-content{
+      width:100%;
+      max-width:480px;
+      margin:auto;
+    }
+
+    .welcome-brand{
+      font-size:25px;
+      font-weight:800;
+      letter-spacing:2px;
+      color:var(--text);
+    }
+
+    .welcome-heart{
+      width:220px;
+      max-width:75%;
+      margin:24px auto 12px;
+      display:block;
+      filter:drop-shadow(0 14px 15px rgba(100,75,125,.16));
+    }
+
+    .welcome-heading{
+      font-size:29px;
+      margin:12px 0;
+      color:var(--text);
+    }
+
+    .welcome-tagline{
+      font-size:15px;
+      font-weight:600;
+      color:var(--muted);
+      margin-bottom:14px;
+    }
+
+    .welcome-description{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.8;
+      max-width:390px;
+      margin:0 auto;
+    }
+
+    .welcome-motto{
+      margin:23px 0;
+      font-size:13px;
+      font-weight:600;
+      color:var(--muted);
+      letter-spacing:1px;
+    }
+
+    .welcome-enter{
+      width:100%;
+      max-width:320px;
+      padding:15px;
+      border:0;
+      border-radius:12px;
+      background:var(--text);
+      color:white;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      transition:transform .2s,opacity .2s;
+    }
+
+    .welcome-enter:hover{
+      transform:translateY(-2px);
+      opacity:.9;
+    }
+
+    .welcome-login{
+      margin-top:18px;
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .welcome-login a{
+      color:var(--text);
+      font-weight:700;
+      cursor:pointer;
+      text-decoration:none;
+    }
+
+    .welcome-footer{
+      margin-top:35px;
+      padding-top:20px;
+      border-top:1px solid rgba(150,130,165,.2);
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.8;
+    }
+
+    .welcome-creator{
+      color:var(--text);
+      font-weight:700;
+      font-size:14px;
+    }
+
+    @media(max-width:480px){
+      .welcome-heading{font-size:25px}
+      .welcome-heart{width:185px}
+    }
+  </style>
+
+  <div class="welcome-screen">
+    <div class="welcome-content">
+
+      <div class="welcome-brand">STANSPACE ♡</div>
+
+      <svg class="welcome-heart" viewBox="0 0 300 235"
+        xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="welcomeHeartGradient"
+            x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#EEE5F3"/>
+            <stop offset="38%" stop-color="#D8C9E5"/>
+            <stop offset="72%" stop-color="#C8B4D9"/>
+            <stop offset="100%" stop-color="#BDA8D0"/>
+          </linearGradient>
+
+          <linearGradient id="welcomeHeartShine"
+            x1="0" y1="0" x2=".8" y2="1">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity=".75"/>
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+
+        <ellipse cx="150" cy="207" rx="78" ry="10"
+          fill="#BDA8D0" opacity=".25"/>
+
+        <path
+          d="M150 199 C126 177 42 121 42 70
+          C42 14 111 5 150 56
+          C189 5 258 14 258 70
+          C258 121 174 177 150 199Z"
+          fill="url(#welcomeHeartGradient)"
+          stroke="#BBA6CE"
+          stroke-width="1.5"/>
+
+        <path
+          d="M150 56 C117 19 60 21 49 67
+          C43 100 76 135 109 159
+          C80 121 74 83 92 64
+          C108 47 132 49 150 69Z"
+          fill="url(#welcomeHeartShine)"/>
+      </svg>
+
+      <h1 class="welcome-heading">Welcome to STANSPACE.</h1>
+
+      <p class="welcome-tagline">
+        Your fandom. Your people. Your space.
+      </p>
+
+      <p class="welcome-description">
+        A place to share your favourite music, connect
+        with fellow fans and make memories together.
+      </p>
+
+      <div class="welcome-motto">
+        Connect · Share · Celebrate
+      </div>
+
+      <button class="welcome-enter"
+        onclick="showAuth('signup')">
+        Enter STANSPACE →
+      </button>
+
+      <div class="welcome-login">
+        Already a member?
+        <a onclick="showAuth('login')">Log in</a>
+      </div>
+
+      <div class="welcome-footer">
+        A little community made with love by
+        <div class="welcome-creator">
+          Ishita Chauhan ♡
+        </div>
+        Made for fans, by a fan.
+      </div>
+
+    </div>
+  </div>`;
+}
+
 function showAuth(mode="login",message=""){
 recoveryMode=false;
 $("app").innerHTML=`
@@ -1698,10 +1898,12 @@ console.log("REALTIME EVENT RECEIVED:", newMessage);
   console.log("Realtime channel:", messageRealtimeChannel);
 });
 }
-async function start(){  const {data,error}=await db.auth.getSession();
+
+async function start(){
+  const {data,error}=await db.auth.getSession();
 
   if(error){
-    showAuth("login",error.message);
+    showWelcome();
     return;
   }
 
@@ -1711,7 +1913,7 @@ async function start(){  const {data,error}=await db.auth.getSession();
     await loadApp();
     setupMessageRealtime();
   }else{
-    showAuth("login");
+    showWelcome();
   }
 
   db.auth.onAuthStateChange((event,newSession)=>{
@@ -1746,10 +1948,11 @@ async function start(){  const {data,error}=await db.auth.getSession();
       unreadMessages=0;
       activeConversationId=null;
 
-      showAuth("login");
+      showWelcome();
     }
   });
 }
+
 
 start();
 </script>
