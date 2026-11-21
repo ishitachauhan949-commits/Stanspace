@@ -2292,6 +2292,7 @@ async function showFollowList(userId,type){
 
 // PROFILE
 
+
 function renderProfile(){
 const p=viewedProfile||profile,own=!viewedProfile;
 const mine=posts.filter(post=>post.user_id===p.id);
@@ -2307,6 +2308,11 @@ const followText=pending
     ?"Following · Unfollow"
     :"Follow ♡";
 
+const showCountry=own || p.show_country!==false;
+const countryLine=showCountry&&p.country
+  ?` · ${esc(p.country)}`
+  :"";
+
 $("pageContent").innerHTML=`
 <div class="card" style="padding:0;overflow:hidden">
 <div class="profile-cover"></div><div class="profile-card">
@@ -2318,7 +2324,7 @@ ${mutual?`<button class="btn" onclick="openConversation('${p.id}')">✉ Message<
 </div>
 
 <div class="profile-name">${esc(p.display_name||p.username)}</div>
-<div class="sub">@${esc(p.username)} · ${esc(p.country||"")}</div>
+<div class="sub">@${esc(p.username)}${countryLine}</div>
 <p class="profile-bio">${esc(p.bio||"No bio yet. Add something about yourself ♡")}</p>
 
 ${!own?`
@@ -2469,7 +2475,6 @@ async function submitUserReport(event,userId){
   toast("Report submitted. Thank you for helping keep STANSPACE safe. ♡");
 }
 // EDIT PROFILE
-
 function editProfile(){
   $("modalRoot").innerHTML=`
   <div class="modal-back" onclick="if(event.target===this)closeModal()">
@@ -2491,6 +2496,17 @@ function editProfile(){
       <label class="label">Country</label>
       <input class="field" id="editCountry"
         value="${esc(profile.country||"")}">
+
+      <div class="card" style="margin:12px 0;padding:14px">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+          <input type="checkbox" id="editShowCountry"
+            ${profile.show_country!==false?"checked":""}>
+          <span>
+            <b>Show my country on my profile</b>
+            <div class="sub">Turn this off to hide your country from other members.</div>
+          </span>
+        </label>
+      </div>
 
       <label class="label">Bio</label>
       <textarea class="field" id="editBio" maxlength="250" rows="4">${esc(profile.bio||"")}</textarea>
@@ -2519,6 +2535,7 @@ async function saveProfile(){
     display_name:$("editDisplay").value.trim(),
     country:$("editCountry").value.trim(),
     bio:$("editBio").value.trim(),
+    show_country:$("editShowCountry").checked,
     is_private:$("editPrivate").checked
   };
 
@@ -2615,6 +2632,7 @@ async function saveProfile(){
     }
   }
 }
+
 // SETTINGS
 
 function renderSettings(){
