@@ -1807,17 +1807,25 @@ const preview=$("photoPreview");if(preview){preview.innerHTML="";preview.style.d
 }
 
 // POST COMPOSER
+
 function composer(fandom=null){
-return `<div class="card"><div class="composer">${avatar(profile.display_name)}
-<div style="flex:1;min-width:0">
-<textarea id="postContent" maxlength="2000" placeholder="What's happening in your K-pop world? ♡"></textarea>
-<div id="photoPreview" class="photo-preview"></div>
-<div class="composer-bottom"><div class="photo-tools">
-<label class="photo-button" for="photoInput">＋ Add photo</label>
-<input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onchange="choosePhoto(this)">
-<span class="sub">Up to 5 MB</span></div>
-<button class="btn" id="postButton" onclick="createPost(${fandom?`'${esc(fandom)}'`:"null"})">Post ♡</button>
-</div></div></div></div>`;
+  return `<div class="card">
+    <div class="composer">
+      ${avatar(profile?.display_name||profile?.username,profile?.avatarDisplayUrl)}
+      <div style="flex:1;min-width:0">
+        <textarea id="postContent" maxlength="2000" placeholder="What's happening in your K-pop world? ♡"></textarea>
+        <div id="photoPreview" class="photo-preview"></div>
+        <div class="composer-bottom">
+          <div class="photo-tools">
+            <label class="photo-button" for="photoInput">＋ Add photo</label>
+            <input id="photoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onchange="choosePhoto(this)">
+            <span class="sub">Up to 5 MB</span>
+          </div>
+          <button class="btn" id="postButton" onclick="createPost(${fandom?`'${esc(fandom)}'`:"null"})">Post ♡</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 async function createPost(fandom=null){
 const content=$("postContent")?.value.trim()||"",file=selectedPhoto;
