@@ -763,12 +763,20 @@ async function loadPosts(){
     comments=[];
   }
 }
-async function loadRelationships(){
-const {data,error}=await db.from("follows").select("follower_id,following_id,created_at");
-if(error){toast("Could not load follows: "+error.message);relationships=[];return}
-relationships=data||[];
-}
 
+async function loadRelationships(){
+
+  const {data,error}=await db.from("follows")
+    .select("follower_id,following_id,status,created_at");
+
+  if(error){
+    toast("Could not load follows: "+error.message);
+    relationships=[];
+    return;
+  }
+
+  relationships=data||[];
+}
 // NOTIFICATIONS
 async function loadNotifications(){
 const {data,error}=await db.from("notifications")
