@@ -809,6 +809,7 @@ notifications.forEach(n=>n.read_at=n.read_at||new Date().toISOString());
 renderNotifications();updateNotificationBadges();toast("All notifications marked as read ♡");
 }
 
+
 async function renderNotifications(){
 
   await loadNotifications();
@@ -816,7 +817,7 @@ async function renderNotifications(){
   // Load incoming follow requests
   const {data:requests,error:requestError}=await db
     .from("follows")
-    .select("id,follower_id,created_at")
+    .select("follower_id,following_id,created_at")
     .eq("following_id",currentUser.id)
     .eq("status","pending")
     .order("created_at",{ascending:false});
@@ -847,7 +848,6 @@ async function renderNotifications(){
     </div>
 
     <div class="card">
-
       <h3>Follow Requests ♡</h3>
 
       ${
@@ -858,8 +858,7 @@ async function renderNotifications(){
           if(!person)return "";
 
           return `
-            <div class="settings-row"
-              style="padding:14px 5px">
+            <div class="settings-row" style="padding:14px 5px">
 
               <div style="display:flex;align-items:center;gap:10px">
                 ${avatar(person.display_name||person.username)}
@@ -873,12 +872,12 @@ async function renderNotifications(){
 
               <div style="display:flex;gap:7px;margin-top:10px">
                 <button class="btn"
-                  onclick="acceptFollowRequest('${r.id}')">
+                  onclick="acceptFollowRequest('${r.follower_id}')">
                   Accept
                 </button>
 
                 <button class="btn secondary"
-                  onclick="rejectFollowRequest('${r.id}')">
+                  onclick="rejectFollowRequest('${r.follower_id}')">
                   Reject
                 </button>
               </div>
@@ -888,11 +887,9 @@ async function renderNotifications(){
         }).join("")
         : '<p class="sub">No pending follow requests. ♡</p>'
       }
-
     </div>
 
     <div class="card" style="margin-top:15px">
-
       <h3>Recent Activity</h3>
 
       ${
@@ -914,21 +911,19 @@ async function renderNotifications(){
             </div>
 
             ${n.read_at?"":'<span class="nav-count">New</span>'}
-
           </div>
         `).join("")
         : '<p class="sub">You have no notifications yet. ♡</p>'
       }
-
     </div>
   `;
 }
 
-async function acceptFollowRequest(requestId){
+async function acceptFollowRequest(followerId){
 
   const {error}=await db.from("follows")
     .update({status:"accepted"})
-    .eq("id",requestId)
+    .eq("follower_id",followerId)
     .eq("following_id",currentUser.id)
     .eq("status","pending");
 
@@ -943,11 +938,11 @@ async function acceptFollowRequest(requestId){
   toast("Follow request accepted ♡");
 }
 
-async function rejectFollowRequest(requestId){
+async function rejectFollowRequest(followerId){
 
   const {error}=await db.from("follows")
     .update({status:"rejected"})
-    .eq("id",requestId)
+    .eq("follower_id",followerId)
     .eq("following_id",currentUser.id)
     .eq("status","pending");
 
@@ -1909,10 +1904,6 @@ function hasPendingFollowRequest(userId){
        x.following_id===userId &&
        x.status==="pending"
   );
-}
-
-function isMutualFollower(userId){
-  return amFollowing(userId) && followsMe(userId);
 }
 // OPEN USER PROFILE
 
