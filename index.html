@@ -1109,6 +1109,7 @@ ${navButton("✉","Messages","messages")}
 ${navButton("▤","My profile","profile")}
 ${navButton("⚙","Settings","settings")}
 ${navButton("♡","Feedback & Complaints","feedback")}
+${currentUser.id==="2c7a96a7-24ea-4eac-9988-8edfba7f5899" ? navButton("♛","Admin Dashboard","admin") : ""}
 <div class="side-title">YOUR FANDOMS</div>
 ${myFandoms.slice(0,8).map(f=>`<div class="mini-community" onclick="openFandom('${esc(f)}')"><div class="dot">${esc(f.slice(0,2))}</div><span>${esc(f)}</span></div>`).join("")}
 </div></aside>
@@ -1228,14 +1229,134 @@ async function submitFeedback(event){
   $("feedbackForm").reset();
   toast("Thank you! Your submission has been received. ♡");
 }
-function showPage(page){
-currentPage=page;viewedProfile=null;
-if(!$("pageContent"))return;
-const pages={home:renderHome,fandoms:renderFandoms,explore:renderExplore,people:renderPeople,notifications:renderNotifications,messages:renderMessages,profile:renderProfile,settings:renderSettings,feedback:renderFeedback};
-(pages[page]||renderHome)();
-document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.getAttribute("onclick")===`showPage('${page}')`));
+
+async function renderAdmin(){
+  const page=$("pageContent");
+
+  if(!currentUser || currentUser.id!=="2c7a96a7-24ea-4eac-9988-8edfba7f5899"){
+    toast("You don't have permission to access this page.");
+    showPage("home");
+    return;
+  }
+
+  page.innerHTML=`
+    <div class="page-head">
+      <div>
+        <h1>Admin Dashboard ♛</h1>
+        <p class="sub">Your private STANSPACE control room.</p>
+      </div>
+    </div>
+    <div class="card"><p class="sub">Loading submissions...</p></div>
+  `;
+
+  const {data:reports,error}=await db
+    .from("feedback_reports")
+    .select("*")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    console.error(error);
+    page.innerHTML=`<div class="card">Could not load submissions.</div>`;
+    return;
+  }
+
+  const userIds=[...new Set(reports.map(r=>r.user_id))];
+  let profiles=[];
+
+  if(userIds.length){
+    const result=await db.from("profiles")
+      .select("id,username,display_name")
+      .in("id",userIds);
+
+    if(result.error) console.error(result.error);
+    else profiles=result.data||[];
+  }
+
+  const profileMap={};
+  profiles.forEach(p=>profileMap[p.id]=p);
+
+  page.innerHTML=`
+    <div class="page-head">
+      <div>
+        <h1>Admin Dashboard ♛</h1>
+        <p class="sub">${reports.length} total submissions</p>
+      </div>
+    </div>
+
+    ${reports.length ? reports.map(r=>{
+      const p=profileMap[r.user_id];
+      const username=p?.display_name||p?.username||"Unknown user";
+
+      return `
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <b>${r.type==="complaint"?"⚠ Complaint":"♡ Feedback"}</b>
+            <span class="sub">${new Date(r.created_at).toLocaleString()}</span>
+          </div>
+
+          <h3 style="margin:14px 0 6px">${esc(r.subject)}</h3>
+          <p class="sub">${esc(r.category||"Uncategorised")} · From: ${esc(username)}</p>
+          <p style="white-space:pre-wrap;line-height:1.7">${esc(r.message)}</p>
+
+          <label style="display:block;margin-top:16px">Submission status</label>
+          <select class="input" style="margin-top:7px"
+            onchange="updateReportStatus('${r.id}',this.value)">
+            <option value="new" ${r.status==="new"?"selected":""}>New</option>
+            <option value="reviewing" ${r.status==="reviewing"?"selected":""}>Reviewing</option>
+            <option value="resolved" ${r.status==="resolved"?"selected":""}>Resolved</option>
+          </select>
+        </div>
+      `;
+    }).join("") : `
+      <div class="card">
+        <p class="sub">No submissions yet. Your inbox is empty! ♡</p>
+      </div>
+    `}
+  `;
 }
 
+async function updateReportStatus(reportId,status){
+  if(!currentUser || currentUser.id!=="2c7a96a7-24ea-4eac-9988-8edfba7f5899")return;
+
+  if(!["new","reviewing","resolved"].includes(status))return;
+
+  const {error}=await db.from("feedback_reports")
+    .update({status})
+    .eq("id",reportId);
+
+  if(error){
+    console.error(error);
+    toast("Could not update status.");
+    return;
+  }
+
+  toast("Submission status updated! ♡");
+}
+function showPage(page){
+  currentPage=page;
+  viewedProfile=null;
+
+  if(!$("pageContent"))return;
+
+  const pages={
+    home:renderHome,
+    fandoms:renderFandoms,
+    explore:renderExplore,
+    people:renderPeople,
+    notifications:renderNotifications,
+    messages:renderMessages,
+    profile:renderProfile,
+    settings:renderSettings,
+    feedback:renderFeedback,
+    admin:renderAdmin
+  };
+
+  (pages[page]||renderHome)();
+
+  document.querySelectorAll(".navbtn").forEach(b=>
+    b.classList.toggle("active",b.getAttribute("onclick")===`showPage('${page}')`)
+  );
+}
 // PHOTO PICKER
 function choosePhoto(input){
 const file=input.files?.[0];if(!file)return;
