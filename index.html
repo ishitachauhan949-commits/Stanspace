@@ -144,6 +144,10 @@ button{cursor:pointer;border:0}
 
 @media(max-width:900px){.layout{grid-template-columns:180px minmax(0,1fr)}.rightbar{display:none}}
 @media(max-width:640px){
+#pageContent{
+  padding-bottom:110px !important;
+}
+
 .topbar{height:60px;padding:0 13px}
 .layout{display:block;margin:16px auto;padding:0 11px 82px}
 .sidebar,.rightbar{display:none}
@@ -785,6 +789,45 @@ if(error){toast("Could not update notifications: "+error.message);return}
 notifications.forEach(n=>n.read_at=n.read_at||new Date().toISOString());
 renderNotifications();updateNotificationBadges();toast("All notifications marked as read ♡");
 }
+
+async function renderNotifications(){
+
+  await loadNotifications();
+
+  $("pageContent").innerHTML=`
+    <div class="page-head">
+      <div>
+        <h1>Notifications</h1>
+        <div class="sub">Your latest STANSPACE activity. ♡</div>
+      </div>
+    </div>
+
+    <div class="card">
+      ${
+        notifications.length
+        ? notifications.map(n=>`
+          <div class="settings-row"
+            style="padding:14px 5px;cursor:pointer;${n.read_at?"":"background:var(--soft);"}"
+            onclick="openNotification('${n.id}')">
+
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:22px">
+                ${notificationSymbol(n.type)}
+              </div>
+              <div>
+                <div>${notificationMessage(n)}</div>
+                <div class="sub">${formatDate(n.created_at)}</div>
+              </div>
+            </div>
+
+            ${n.read_at?"":'<span class="nav-count">New</span>'}
+          </div>
+        `).join("")
+        : '<p class="sub">You have no notifications yet. ♡</p>'
+      }
+    </div>
+  `;
+}
 function notificationMessage(n){
 const name=n.actor?.display_name||n.actor?.username||"Someone";
 if(n.type==="like")return `<b>${esc(name)}</b> liked your post.`;
@@ -913,6 +956,27 @@ function conversationList(){
 }
 
 async function openConversation(userId){
+
+  if(!currentUser || userId===currentUser.id)return;
+
+  const {data:blocks,error}=await db
+    .from("user_blocks")
+    .select("id")
+    .or(
+      `and(blocker_id.eq.${currentUser.id},blocked_id.eq.${userId}),and(blocker_id.eq.${userId},blocked_id.eq.${currentUser.id})`
+    );
+
+  if(error){
+    console.error(error);
+    toast("Could not verify block status.");
+    return;
+  }
+
+  if(blocks && blocks.length){
+    toast("You cannot message this user.");
+    return;
+  }
+
   if(!isMutualFollower(userId)){
     toast("You must follow each other to message.");
     return;
@@ -923,7 +987,6 @@ async function openConversation(userId){
 
   await renderMessages();
 }
-
 async function renderMessages(){
   const page=$("pageContent");
   if(!page)return;
@@ -1000,6 +1063,29 @@ async function renderMessages(){
 }
 
 async function selectConversation(userId){
+
+  if(!currentUser)return;
+
+  const {data:blocks,error}=await db
+    .from("user_blocks")
+    .select("id")
+    .or(
+      `and(blocker_id.eq.${currentUser.id},blocked_id.eq.${userId}),and(blocker_id.eq.${userId},blocked_id.eq.${currentUser.id})`
+    );
+
+  if(error){
+    console.error(error);
+    toast("Could not verify block status.");
+    return;
+  }
+
+  if(blocks && blocks.length){
+    toast("You cannot message this user.");
+    activeConversationId=null;
+    await renderMessages();
+    return;
+  }
+
   if(!isMutualFollower(userId)){
     toast("You must follow each other to message.");
     return;
@@ -1012,7 +1098,6 @@ async function selectConversation(userId){
     el.classList.remove("selected");
   });
 }
-
 async function showConversation(userId){
   const panel=$("chatPanel");
   if(!panel)return;
@@ -1086,10 +1171,32 @@ async function showConversation(userId){
 }
 
 async function sendMessage(userId){
+
+  if(!currentUser || userId===currentUser.id)return;
+
   const input=$("messageInput");
   const content=input?.value.trim();
 
   if(!content)return;
+
+  // Check whether either user has blocked the other
+  const {data:blocks,error:blockError}=await db
+    .from("user_blocks")
+    .select("id")
+    .or(
+      `and(blocker_id.eq.${currentUser.id},blocked_id.eq.${userId}),and(blocker_id.eq.${userId},blocked_id.eq.${currentUser.id})`
+    );
+
+  if(blockError){
+    console.error(blockError);
+    toast("Could not verify block status.");
+    return;
+  }
+
+  if(blocks && blocks.length){
+    toast("You cannot message this user.");
+    return;
+  }
 
   if(!isMutualFollower(userId)){
     toast("You must follow each other to message.");
@@ -1705,10 +1812,28 @@ async function openUserProfile(userId){
 
 
 // FOLLOW / UNFOLLOW
-
 async function toggleFollow(userId){
 
   if(!currentUser || userId===currentUser.id)return;
+
+  // Check whether either user has blocked the other
+  const {data:blocks,error:blockError}=await db
+    .from("user_blocks")
+    .select("id")
+    .or(
+      `and(blocker_id.eq.${currentUser.id},blocked_id.eq.${userId}),and(blocker_id.eq.${userId},blocked_id.eq.${currentUser.id})`
+    );
+
+  if(blockError){
+    console.error(blockError);
+    toast("Could not verify block status. Please try again.");
+    return;
+  }
+
+  if(blocks && blocks.length){
+    toast("You cannot follow this user.");
+    return;
+  }
 
   const following=amFollowing(userId);
 
@@ -1740,8 +1865,6 @@ async function toggleFollow(userId){
   renderProfile();
   updateNotificationBadges();
 }
-
-
 // FOLLOWERS / FOLLOWING LIST
 
 async function showFollowList(userId,type){
@@ -1850,6 +1973,8 @@ async function showFollowList(userId,type){
 }
 
 // PROFILE
+
+// PROFILE
 function renderProfile(){
 const p=viewedProfile||profile,own=!viewedProfile;
 const mine=posts.filter(post=>post.user_id===p.id);
@@ -1866,91 +1991,158 @@ $("pageContent").innerHTML=`
 ${mutual?`<button class="btn" onclick="openConversation('${p.id}')">✉ Message</button>`:`<button class="btn secondary" disabled title="You must follow each other to message">✉ Message locked</button>`}
 </div>`}
 </div>
+
 <div class="profile-name">${esc(p.display_name||p.username)}</div>
 <div class="sub">@${esc(p.username)} · ${esc(p.country||"")}</div>
 <p class="profile-bio">${esc(p.bio||"No bio yet. Add something about yourself ♡")}</p>
-${!own?`<div class="message-policy">${mutual?"♡ You follow each other! You can send private messages.":otherFollows?"♡ This person follows you. Follow them back to unlock private messaging.":"♡ Private messages are available only when you and the other person follow each other."}</div>`:""}
+
+${!own?`
+<div class="message-policy">${mutual?"♡ You follow each other! You can send private messages.":otherFollows?"♡ This person follows you. Follow them back to unlock private messaging.":"♡ Private messages are available only when you and the other person follow each other."}</div>
+
+<div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px">
+<button class="btn secondary" onclick="blockUser('${p.id}')">⊘ Block User</button>
+<button class="btn secondary" onclick="openReportUser('${p.id}')">⚑ Report User</button>
+</div>
+`:""}
+
 <div class="stats">
 <div><b>${mine.length}</b><span>Posts</span></div>
 <button class="stat-button" onclick="showFollowList('${p.id}','followers')"><b>${followers}</b><span>Followers</span></button>
 <button class="stat-button" onclick="showFollowList('${p.id}','following')"><b>${following}</b><span>Following</span></button>
 ${own?`<div><b>${myFandoms.length}</b><span>Fandoms</span></div>`:""}
 </div>
+
 ${own?`<div class="sub">MY FANDOMS</div><div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:8px">${myFandoms.map(f=>`<span class="tag">${esc(f)}</span>`).join("")}</div>`:""}
 </div></div>
+
 <h3 style="font-size:16px">${own?"My posts":esc(p.display_name||p.username)+"'s posts"}</h3>
 ${mine.length?mine.map(postCard).join(""):`<div class="card empty"><div class="big">♡</div><p>No posts yet.</p></div>`}`;
 }
 
-// NOTIFICATIONS PAGE
+async function blockUser(userId){
 
-async function renderNotifications(){
+  if(!currentUser || userId===currentUser.id)return;
 
-  const page = $("pageContent");
-  if(!page) return;
+  const confirmed=confirm(
+    "Block this user? This will remove your follow connections and prevent private messaging."
+  );
 
-  page.innerHTML = `
-    <div class="page-head">
-      <div>
-        <h1>Notifications ♡</h1>
-        <div class="sub">Loading your notifications...</div>
+  if(!confirmed)return;
+
+  // Save the block first
+  const {error:blockError}=await db.from("user_blocks").insert({
+    blocker_id:currentUser.id,
+    blocked_id:userId
+  });
+
+  if(blockError){
+    if(blockError.code==="23505"){
+      toast("This user is already blocked.");
+    }else{
+      console.error(blockError);
+      toast("Could not block this user: "+blockError.message);
+    }
+    return;
+  }
+
+  // Remove follow connections in both directions
+  const {error:followError}=await db.from("follows")
+    .delete()
+    .or(
+      `and(follower_id.eq.${currentUser.id},following_id.eq.${userId}),and(follower_id.eq.${userId},following_id.eq.${currentUser.id})`
+    );
+
+  if(followError){
+    console.error("Follow removal error:",followError);
+    toast("User blocked, but follow connections could not be removed.");
+  }else{
+    toast("User blocked and follow connections removed. ♡");
+  }
+
+  // Close any conversation with this person
+  if(activeConversationId===userId){
+    activeConversationId=null;
+  }
+
+  await loadRelationships();
+
+  viewedProfile=null;
+  showPage("home");
+}
+function openReportUser(userId){
+  if(!currentUser || userId===currentUser.id)return;
+
+  const reportedProfile=viewedProfile;
+
+  $("modalRoot").innerHTML=`
+    <div class="modal-back" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <h2>Report User ⚑</h2>
+        <p>Tell us why you're reporting this account. Our admin will review your submission.</p>
+
+        <form onsubmit="submitUserReport(event,'${userId}')">
+          <label class="label">Reason for reporting</label>
+          <select class="field" id="userReportCategory" required>
+            <option value="">Choose a reason</option>
+            <option value="Harassment or bullying">Harassment or bullying</option>
+            <option value="Hate speech or discrimination">Hate speech or discrimination</option>
+            <option value="Inappropriate content">Inappropriate content</option>
+            <option value="Spam or fake account">Spam or fake account</option>
+            <option value="Impersonation">Impersonation</option>
+            <option value="Other">Other</option>
+          </select>
+
+          <label class="label" style="display:block;margin-top:16px">Additional details</label>
+          <textarea class="field" id="userReportDetails" rows="5"
+            maxlength="3000" placeholder="Please explain what happened..." required></textarea>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+            <button type="button" class="btn secondary" onclick="closeModal()">Cancel</button>
+            <button type="submit" class="btn" id="userReportSubmit">Submit Report</button>
+          </div>
+        </form>
       </div>
     </div>
-    <div class="card">
-      <div class="empty">Checking for updates... ♡</div>
-    </div>
   `;
+}
 
-  await loadNotifications();
-  updateNotificationBadges();
 
-  const unread = unreadCount();
+async function submitUserReport(event,userId){
+  event.preventDefault();
 
-  page.innerHTML = `
-    <div class="page-head">
-      <div>
-        <h1>Notifications ♡</h1>
-        <div class="sub">
-          ${unread
-            ? `${unread} unread notification${unread===1?"":"s"}`
-            : "You're all caught up!"}
-        </div>
-      </div>
+  if(!currentUser || userId===currentUser.id)return;
 
-      ${unread
-        ? `<button class="btn secondary" onclick="markAllNotificationsRead()">Mark all read</button>`
-        : ""}
-    </div>
+  const category=$("userReportCategory").value;
+  const details=$("userReportDetails").value.trim();
+  const button=$("userReportSubmit");
 
-    <div class="card">
-      ${notifications.length
-        ? notifications.map(n => `
-          <div class="notification-row ${n.read_at?"":"unread"}"
-               onclick="openNotification('${n.id}')">
+  if(!category || !details){
+    toast("Please complete all fields.");
+    return;
+  }
 
-            <div class="notification-icon">
-              ${notificationSymbol(n.type)}
-            </div>
+  button.disabled=true;
+  button.textContent="Submitting...";
 
-            <div class="notification-info">
-              <div>${notificationMessage(n)}</div>
-              <div class="sub">${formatDate(n.created_at)}</div>
-              ${n.read_at ? "" : `<div class="unread-label">NEW</div>`}
-            </div>
+  const {error}=await db.from("feedback_reports").insert({
+    user_id:currentUser.id,
+    reported_user_id:userId,
+    type:"complaint",
+    category,
+    subject:"User report: "+category,
+    message:details
+  });
 
-            ${n.read_at ? "" : `<div class="notification-dot"></div>`}
-          </div>
-        `).join("")
-        : `
-          <div class="empty">
-            <div class="big">♡</div>
-            <h3>No notifications yet</h3>
-            <p>When someone likes, comments on your posts or follows you, you'll see it here.</p>
-          </div>
-        `
-      }
-    </div>
-  `;
+  if(error){
+    console.error(error);
+    button.disabled=false;
+    button.textContent="Submit Report";
+    toast("Could not submit report. Please try again.");
+    return;
+  }
+
+  closeModal();
+  toast("Report submitted. Thank you for helping keep STANSPACE safe. ♡");
 }
 // EDIT PROFILE
 
@@ -2087,21 +2279,116 @@ if(signedUrlError){
   }
 }
 // SETTINGS
-function renderSettings(){
-$("pageContent").innerHTML=`
-<div class="page-head"><div><h1>Settings</h1><div class="sub">Your account and preferences.</div></div></div>
-<div class="card"><h3 style="margin-top:0">Account</h3>
-<div class="settings-row"><span>Email</span><b>${esc(currentUser.email)}</b></div>
-<div class="settings-row"><span>Username</span><b>@${esc(profile.username)}</b></div>
-<div class="settings-row"><span>Account created</span><b>${formatDate(currentUser.created_at)}</b></div></div>
-<div class="card"><h3 style="margin-top:0">Your STANSPACE</h3>
-<div class="settings-row"><span>Joined fandoms</span><b>${myFandoms.length}</b></div>
-<div class="settings-row"><span>Followers</span><b>${followerCount(currentUser.id)}</b></div>
-<div class="settings-row"><span>Following</span><b>${followingCount(currentUser.id)}</b></div>
-<div class="settings-row"><span>Community guidelines</span><span>Be kind ♡</span></div></div>
-<div class="card"><h3 style="margin-top:0">Sign out</h3>
-<p class="sub">Sign out of your STANSPACE account on this device.</p>
-<button class="btn danger" onclick="signOut()">Sign out</button></div>`;
+async function renderSettings(){
+
+  $("pageContent").innerHTML=`
+    <div class="page-head">
+      <div>
+        <h1>Settings</h1>
+        <div class="sub">Your account and preferences.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Account</h3>
+      <div class="settings-row"><span>Email</span><b>${esc(currentUser.email)}</b></div>
+      <div class="settings-row"><span>Username</span><b>@${esc(profile.username)}</b></div>
+      <div class="settings-row"><span>Account created</span><b>${formatDate(currentUser.created_at)}</b></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Your STANSPACE</h3>
+      <div class="settings-row"><span>Joined fandoms</span><b>${myFandoms.length}</b></div>
+      <div class="settings-row"><span>Followers</span><b>${followerCount(currentUser.id)}</b></div>
+      <div class="settings-row"><span>Following</span><b>${followingCount(currentUser.id)}</b></div>
+      <div class="settings-row"><span>Community guidelines</span><span>Be kind ♡</span></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Blocked Accounts</h3>
+      <p class="sub">Manage the accounts you have blocked.</p>
+      <div id="blockedAccountsList">
+        <p class="sub">Loading blocked accounts...</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Sign out</h3>
+      <p class="sub">Sign out of your STANSPACE account on this device.</p>
+      <button class="btn danger" onclick="signOut()">Sign out</button>
+    </div>
+  `;
+
+  await loadBlockedAccounts();
+}
+async function loadBlockedAccounts(){
+
+  const container=$("blockedAccountsList");
+  if(!container || !currentUser)return;
+
+  const {data:blocks,error}=await db
+    .from("user_blocks")
+    .select("blocked_id")
+    .eq("blocker_id",currentUser.id);
+
+  if(error){
+    console.error(error);
+    container.innerHTML=`<p class="sub">Could not load blocked accounts.</p>`;
+    return;
+  }
+
+  if(!blocks.length){
+    container.innerHTML=`<p class="sub">You haven't blocked anyone. ♡</p>`;
+    return;
+  }
+
+  const ids=blocks.map(b=>b.blocked_id);
+
+  const {data:users,error:userError}=await db
+    .from("profiles")
+    .select("id,username,display_name")
+    .in("id",ids);
+
+  if(userError){
+    console.error(userError);
+    container.innerHTML=`<p class="sub">Could not load account details.</p>`;
+    return;
+  }
+
+  container.innerHTML=(users||[]).map(user=>`
+    <div class="settings-row">
+      <div>
+        <b>${esc(user.display_name||user.username)}</b>
+        <div class="sub">@${esc(user.username)}</div>
+      </div>
+      <button class="btn secondary" onclick="unblockUser('${user.id}')">
+        Unblock
+      </button>
+    </div>
+  `).join("");
+}
+async function unblockUser(userId){
+
+  if(!currentUser)return;
+
+  const confirmed=confirm("Unblock this account?");
+
+  if(!confirmed)return;
+
+  const {error}=await db.from("user_blocks")
+    .delete()
+    .eq("blocker_id",currentUser.id)
+    .eq("blocked_id",userId);
+
+  if(error){
+    console.error(error);
+    toast("Could not unblock this account.");
+    return;
+  }
+
+  toast("Account unblocked. ♡");
+
+  await loadBlockedAccounts();
 }
 async function signOut(){
 const {error}=await db.auth.signOut();
