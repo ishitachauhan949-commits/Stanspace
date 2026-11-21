@@ -147,8 +147,30 @@ button{cursor:pointer;border:0}
 .topbar{height:60px;padding:0 13px}
 .layout{display:block;margin:16px auto;padding:0 11px 82px}
 .sidebar,.rightbar{display:none}
-.mobile-nav{position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:7px 0;z-index:10}
-.mobile-nav button{background:transparent;color:var(--muted);font-size:8px;font-weight:bold;min-width:0;padding:2px;flex:1}
+.mobile-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:white;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:flex-start;
+  overflow-x:auto;
+  padding:8px 5px env(safe-area-inset-bottom);
+  z-index:100;
+  gap:4px;
+}
+
+.mobile-nav button{
+  background:transparent;
+  color:var(--muted);
+  font-size:9px;
+  font-weight:bold;
+  min-width:64px;
+  flex:0 0 64px;
+  padding:4px 2px;
+}
 .mobile-nav span{display:block;font-size:16px;margin-bottom:3px}
 .community-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .card{padding:13px}
@@ -1122,18 +1144,21 @@ ${myFandoms.slice(0,8).map(f=>`<div class="mini-community" onclick="openFandom('
 <p class="sub">${myFandoms.length} communities joined</p>
 <button class="btn secondary" style="width:100%" onclick="showPage('fandoms')">Explore your fandoms</button></div>
 </aside></div>
+
 <nav class="mobile-nav">
-<button onclick="showPage('home')"><span>⌂</span>Home</button>
-<button onclick="showPage('fandoms')"><span>♡</span>Fandoms</button>
-<button onclick="showPage('explore')"><span>⌕</span>Explore</button>
-<button onclick="showPage('people')"><span>♙</span>People</button>
-<button onclick="showPage('notifications')"><span>♧</span>Alerts <span class="nav-count ${unreadCount()?"":"hidden"}" data-notification-count>${unreadCount()}</span></button>
-<button onclick="showPage('messages')"><span>✉</span>Messages <span class="nav-count ${unreadMessages?"":"hidden"}" data-message-count>${unreadMessages}</span></button>
-<button onclick="showPage('profile')"><span>▤</span>Profile</button>
+  <button onclick="showPage('home')"><span>⌂</span>Home</button>
+  <button onclick="showPage('fandoms')"><span>♡</span>Fandoms</button>
+  <button onclick="showPage('explore')"><span>⌕</span>Explore</button>
+  <button onclick="showPage('people')"><span>♙</span>People</button>
+  <button onclick="showPage('notifications')"><span>♧</span>Alerts <span class="nav-count ${unreadCount()?"":"hidden"}" data-notification-count>${unreadCount()}</span></button>
+  <button onclick="showPage('messages')"><span>✉</span>Messages <span class="nav-count ${unreadMessages?"":"hidden"}" data-message-count>${unreadMessages}</span></button>
+  <button onclick="showPage('profile')"><span>▤</span>Profile</button>
+  <button onclick="showPage('settings')"><span>⚙</span>Settings</button>
+  <button onclick="showPage('feedback')"><span>♡</span>Feedback</button>
+  ${currentUser.id==="2c7a96a7-24ea-4eac-9988-8edfba7f5899" ? `<button onclick="showPage('admin')"><span>♛</span>Admin</button>` : ""}
 </nav>`;
 showPage(currentPage);
 }
-
 function renderFeedback(){
   $("pageContent").innerHTML=`
     <div class="page-head">
