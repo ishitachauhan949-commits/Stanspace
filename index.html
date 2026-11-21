@@ -606,6 +606,7 @@ session=result.data.session;if(session)await loadApp();
 
 // LOAD USER DATA
 
+
 async function loadApp(){
   const {data:{user},error:userError}=await db.auth.getUser();
 
@@ -644,6 +645,30 @@ async function loadApp(){
     }
   }
 
+  // Mandatory founder follow for new accounts
+  if(profile.founder_follow_required){
+
+    const founderId="2c7a96a7-24ea-4eac-9988-8edfba7f5899";
+
+    const {data:founderFollow,error:followError}=await db
+      .from("follows")
+      .select("follower_id")
+      .eq("follower_id",currentUser.id)
+      .eq("following_id",founderId)
+      .eq("status","accepted")
+      .maybeSingle();
+
+    if(followError){
+      toast("Could not check founder follow status: "+followError.message);
+      return;
+    }
+
+    if(!founderFollow){
+      renderFounderGate();
+      return;
+    }
+  }
+
   const {data:members,error:memberError}=await db.from("user_fandoms")
     .select("fandom_id,fandoms(name)")
     .eq("user_id",user.id);
@@ -667,7 +692,133 @@ async function loadApp(){
 
   render();
 }
+function renderFounderGate(){
+  $("app").innerHTML=`
+    <div style="
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    ">
+      <div class="card" style="
+        width:min(100%,460px);
+        text-align:center;
+        padding:32px 24px;
+      ">
+        <div style="font-size:36px;margin-bottom:12px">♡</div>
 
+        <h1>Welcome to STANSPACE!</h1>
+
+        <p class="sub">
+          Before entering our little community,
+          meet the person who created it.
+        </p>
+
+        <div style="margin:28px 0 14px">
+          ${avatar("Ishita")}
+        </div>
+        <h2 style="margin:8px 0">Ishita ♡</h2>
+
+        <p class="sub">@ishi0q · Founder of STANSPACE</p>
+
+        <p style="margin:22px 0">
+          A space built out of love for fandoms,
+          created to bring fans together.
+          I'm so happy you're here!
+        </p>
+
+        <button
+          class="btn"
+          id="founderFollowButton"
+          onclick="followFounder()"
+          style="width:100%;margin-top:12px"
+        >
+          ♡ Follow @ishi0q to continue
+        </button>
+
+        <p class="sub" style="margin-top:16px;font-size:12px">
+          Follow the founder to unlock your STANSPACE experience.
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+async function followFounder(){
+
+  const button=$("founderFollowButton");
+
+  if(!currentUser){
+    toast("Please log in first.");
+    return;
+  }
+
+  if(button){
+    button.disabled=true;
+    button.textContent="Following...";
+  }
+
+  const founderId="2c7a96a7-24ea-4eac-9988-8edfba7f5899";
+
+  // Check whether a follow relationship already exists
+  const {data:existing,error:checkError}=await db
+    .from("follows")
+    .select("follower_id,following_id,status")
+    .eq("follower_id",currentUser.id)
+    .eq("following_id",founderId)
+    .maybeSingle();
+
+  if(checkError){
+    toast("Could not check follow status: "+checkError.message);
+    if(button){
+      button.disabled=false;
+      button.textContent="♡ Follow @ishi0q to continue";
+    }
+    return;
+  }
+
+  if(existing?.status==="accepted"){
+    await loadApp();
+    return;
+  }
+
+  // Remove an old pending or rejected relationship, if present
+  if(existing){
+    const {error:deleteError}=await db
+      .from("follows")
+      .delete()
+      .eq("follower_id",currentUser.id)
+      .eq("following_id",founderId);
+
+    if(deleteError){
+      toast("Could not update follow: "+deleteError.message);
+      if(button){
+        button.disabled=false;
+        button.textContent="♡ Follow @ishi0q to continue";
+      }
+      return;
+    }
+  }
+
+  // Follow the public founder account
+  const {error}=await db.from("follows").insert({
+    follower_id:currentUser.id,
+    following_id:founderId,
+    status:"accepted"
+  });
+
+  if(error){
+    toast("Could not follow the founder: "+error.message);
+    if(button){
+      button.disabled=false;
+      button.textContent="♡ Follow @ishi0q to continue";
+    }
+    return;
+  }
+
+  toast("You're now following @ishi0q! ♡");
+  await loadApp();
+}
 
 async function loadPosts(){
   const {data,error}=await db.from("posts")
