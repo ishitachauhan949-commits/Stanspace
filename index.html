@@ -1878,25 +1878,34 @@ function followingCount(userId){
   ).length;
 }
 
+
 function amFollowing(userId){
   return relationships.some(
     x=>x.follower_id===currentUser.id &&
-       x.following_id===userId
+       x.following_id===userId &&
+       x.status==="accepted"
   );
 }
 
 function followsMe(userId){
   return relationships.some(
     x=>x.follower_id===userId &&
-       x.following_id===currentUser.id
+       x.following_id===currentUser.id &&
+       x.status==="accepted"
+  );
+}
+
+function hasPendingFollowRequest(userId){
+  return relationships.some(
+    x=>x.follower_id===currentUser.id &&
+       x.following_id===userId &&
+       x.status==="pending"
   );
 }
 
 function isMutualFollower(userId){
   return amFollowing(userId) && followsMe(userId);
 }
-
-
 // OPEN USER PROFILE
 
 async function openUserProfile(userId){
@@ -1948,7 +1957,6 @@ async function toggleFollow(userId){
 
   if(!currentUser || userId===currentUser.id)return;
 
-  // Check whether either user has blocked the other
   const {data:blocks,error:blockError}=await db
     .from("user_blocks")
     .select("id")
@@ -1957,7 +1965,6 @@ async function toggleFollow(userId){
     );
 
   if(blockError){
-    console.error(blockError);
     toast("Could not verify block status. Please try again.");
     return;
   }
@@ -1967,25 +1974,27 @@ async function toggleFollow(userId){
     return;
   }
 
+  const pending=hasPendingFollowRequest(userId);
   const following=amFollowing(userId);
 
-  if(following){
+  if(pending || following){
+
     const {error}=await db.from("follows")
       .delete()
       .eq("follower_id",currentUser.id)
       .eq("following_id",userId);
 
     if(error){
-      toast("Could not unfollow: "+error.message);
+      toast("Could not update follow: "+error.message);
       return;
     }
 
     await loadRelationships();
-    toast("Unfollowed.");
+
+    toast(pending ? "Follow request cancelled." : "Unfollowed.");
 
   }else{
 
-    // Check whether the target account is private
     const {data:target,error:profileError}=await db
       .from("profiles")
       .select("is_private")
@@ -2132,20 +2141,27 @@ async function showFollowList(userId,type){
 
 // PROFILE
 
-// PROFILE
 function renderProfile(){
 const p=viewedProfile||profile,own=!viewedProfile;
 const mine=posts.filter(post=>post.user_id===p.id);
-const followers=followerCount(p.id),following=followingCount(p.id),followingMe=own?false:amFollowing(p.id);
+const followers=followerCount(p.id),following=followingCount(p.id);
+const followingMe=own?false:amFollowing(p.id);
+const pending=own?false:hasPendingFollowRequest(p.id);
 const mutual=own?false:isMutualFollower(p.id);
 const otherFollows=own?false:followsMe(p.id);
+
+const followText=pending
+  ?"Requested · Cancel"
+  :followingMe
+    ?"Following · Unfollow"
+    :"Follow ♡";
 
 $("pageContent").innerHTML=`
 <div class="card" style="padding:0;overflow:hidden">
 <div class="profile-cover"></div><div class="profile-card">
 <div class="profile-top">${avatar(p.display_name,p.avatarDisplayUrl)}${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</button>`:`
 <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">
-<button class="btn ${followingMe?"secondary":""}" onclick="toggleFollow('${p.id}')">${followingMe?"Following · Unfollow":"Follow ♡"}</button>
+<button class="btn ${(pending||followingMe)?"secondary":""}" onclick="toggleFollow('${p.id}')">${followText}</button>
 ${mutual?`<button class="btn" onclick="openConversation('${p.id}')">✉ Message</button>`:`<button class="btn secondary" disabled title="You must follow each other to message">✉ Message locked</button>`}
 </div>`}
 </div>
@@ -2155,7 +2171,7 @@ ${mutual?`<button class="btn" onclick="openConversation('${p.id}')">✉ Message<
 <p class="profile-bio">${esc(p.bio||"No bio yet. Add something about yourself ♡")}</p>
 
 ${!own?`
-<div class="message-policy">${mutual?"♡ You follow each other! You can send private messages.":otherFollows?"♡ This person follows you. Follow them back to unlock private messaging.":"♡ Private messages are available only when you and the other person follow each other."}</div>
+<div class="message-policy">${pending?"♡ Your follow request is waiting for approval.":mutual?"♡ You follow each other! You can send private messages.":otherFollows?"♡ This person follows you. Follow them back to unlock private messaging.":"♡ Private messages are available only when you and the other person follow each other."}</div>
 
 <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:14px">
 <button class="btn secondary" onclick="blockUser('${p.id}')">⊘ Block User</button>
@@ -2176,7 +2192,6 @@ ${own?`<div class="sub">MY FANDOMS</div><div style="display:flex;gap:7px;flex-wr
 <h3 style="font-size:16px">${own?"My posts":esc(p.display_name||p.username)+"'s posts"}</h3>
 ${mine.length?mine.map(postCard).join(""):`<div class="card empty"><div class="big">♡</div><p>No posts yet.</p></div>`}`;
 }
-
 async function blockUser(userId){
 
   if(!currentUser || userId===currentUser.id)return;
