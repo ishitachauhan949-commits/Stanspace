@@ -1829,6 +1829,7 @@ async function openUserProfile(userId){
 
 
 // FOLLOW / UNFOLLOW
+
 async function toggleFollow(userId){
 
   if(!currentUser || userId===currentUser.id)return;
@@ -1847,37 +1848,63 @@ async function toggleFollow(userId){
     return;
   }
 
-  if(blocks && blocks.length){
+  if(blocks?.length){
     toast("You cannot follow this user.");
     return;
   }
 
   const following=amFollowing(userId);
 
-  const result=following
-    ? await db.from("follows")
-        .delete()
-        .eq("follower_id",currentUser.id)
-        .eq("following_id",userId)
+  if(following){
+    const {error}=await db.from("follows")
+      .delete()
+      .eq("follower_id",currentUser.id)
+      .eq("following_id",userId);
 
-    : await db.from("follows")
-        .insert({
-          follower_id:currentUser.id,
-          following_id:userId
-        });
+    if(error){
+      toast("Could not unfollow: "+error.message);
+      return;
+    }
 
-  if(result.error){
-    toast("Could not update follow: "+result.error.message);
-    return;
-  }
+    await loadRelationships();
+    toast("Unfollowed.");
 
-  await loadRelationships();
+  }else{
 
-  if(!following){
+    // Check whether the target account is private
+    const {data:target,error:profileError}=await db
+      .from("profiles")
+      .select("is_private")
+      .eq("id",userId)
+      .single();
+
+    if(profileError || !target){
+      toast("Could not check this profile. Please try again.");
+      return;
+    }
+
+    const status=target.is_private ? "pending" : "accepted";
+
+    const {error}=await db.from("follows").insert({
+      follower_id:currentUser.id,
+      following_id:userId,
+      status:status
+    });
+
+    if(error){
+      toast("Could not follow: "+error.message);
+      return;
+    }
+
+    await loadRelationships();
     await loadNotifications();
-  }
 
-  toast(following?"Unfollowed.":"Following ♡");
+    toast(
+      target.is_private
+        ? "Follow request sent ♡"
+        : "Following ♡"
+    );
+  }
 
   renderProfile();
   updateNotificationBadges();
@@ -2188,6 +2215,17 @@ function editProfile(){
       <label class="label">Bio</label>
       <textarea class="field" id="editBio" maxlength="250" rows="4">${esc(profile.bio||"")}</textarea>
 
+      <div class="card" style="margin:15px 0;padding:14px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" id="editPrivate"
+            ${profile.is_private===true?"checked":""}>
+          <span>
+            <b>Private Account</b>
+            <div class="sub">Only approved followers can see your posts.</div>
+          </span>
+        </label>
+      </div>
+
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button class="btn secondary" onclick="closeModal()">Cancel</button>
         <button class="btn" id="saveProfileButton" onclick="saveProfile()">Save changes</button>
@@ -2200,7 +2238,8 @@ async function saveProfile(){
   const updates={
     display_name:$("editDisplay").value.trim(),
     country:$("editCountry").value.trim(),
-    bio:$("editBio").value.trim()
+    bio:$("editBio").value.trim(),
+    is_private:$("editPrivate").checked
   };
 
   const file=$("editAvatar")?.files?.[0];
@@ -2261,16 +2300,17 @@ async function saveProfile(){
 
     if(file){
       const {data:imageData,error:signedUrlError}=await db.storage
-  .from("stanspace-images")
-  .createSignedUrl(newAvatarPath,3600);
+        .from("stanspace-images")
+        .createSignedUrl(newAvatarPath,3600);
 
-if(signedUrlError){
-  console.error("AVATAR SIGNED URL ERROR:",signedUrlError);
-  toast("Picture uploaded but could not display: "+signedUrlError.message);
-  profile.avatarDisplayUrl=null;
-}else{
-  profile.avatarDisplayUrl=imageData?.signedUrl||null;
-}
+      if(signedUrlError){
+        console.error("AVATAR SIGNED URL ERROR:",signedUrlError);
+        toast("Picture uploaded but could not display: "+signedUrlError.message);
+        profile.avatarDisplayUrl=null;
+      }else{
+        profile.avatarDisplayUrl=imageData?.signedUrl||null;
+      }
+
       if(oldAvatarPath && !oldAvatarPath.startsWith("http")){
         await db.storage.from("stanspace-images")
           .remove([oldAvatarPath]);
