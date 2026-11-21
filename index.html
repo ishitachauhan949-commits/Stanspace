@@ -213,8 +213,18 @@ $("toastRoot").innerHTML=`<div class="toast">${esc(message)}</div>`;
 setTimeout(()=>$("toastRoot").innerHTML="",2600);
 }
 function closeModal(){$("modalRoot").innerHTML=""}
-function avatar(name){
-return `<div class="avatar">${esc((name||"U").slice(0,1).toUpperCase())}</div>`;
+
+function avatar(name, imageUrl=null){
+  const initial=esc((name||"U").slice(0,1).toUpperCase());
+
+  return `
+    <div class="avatar">
+      ${imageUrl
+        ? `<img src="${esc(imageUrl)}" alt="${initial}'s profile picture">`
+        : initial
+      }
+    </div>
+  `;
 }
 function formatDate(date){
 return new Date(date).toLocaleString([],{dateStyle:"medium",timeStyle:"short"});
@@ -343,39 +353,163 @@ session=result.data.session;if(session)await loadApp();
 }
 
 // LOAD USER DATA
+
 async function loadApp(){
-const {data:{user},error:userError}=await db.auth.getUser();
-if(userError||!user){showAuth("login");return}
-currentUser=user;
-const {data:p,error:profileError}=await db.from("profiles").select("*").eq("id",user.id).single();
-if(profileError){toast("Could not load your profile: "+profileError.message);return}
-profile=p;
-const {data:members,error:memberError}=await db.from("user_fandoms").select("fandom_id,fandoms(name)").eq("user_id",user.id);
-if(memberError){toast("Could not load your fandoms.");return}
-myFandoms=(members||[]).map(x=>x.fandoms?.name).filter(Boolean);
-await Promise.all([loadPosts(),loadRelationships(),loadNotifications()]);
-await loadUnreadMessages();
-render();
+  const {data:{user},error:userError}=await db.auth.getUser();
+
+  if(userError||!user){
+    showAuth("login");
+    return;
+  }
+
+  currentUser=user;
+
+  const {data:p,error:profileError}=await db.from("profiles")
+    .select("*")
+    .eq("id",user.id)
+    .single();
+
+  if(profileError){
+    toast("Could not load your profile: "+profileError.message);
+    return;
+  }
+
+  profile=p;
+  profile.avatarDisplayUrl=null;
+
+  // Load profile picture from private storage
+  if(profile.avatar_url){
+    if(profile.avatar_url.startsWith("http")){
+      profile.avatarDisplayUrl=profile.avatar_url;
+    }else{
+      const {data:imageData,error:imageError}=await db.storage
+        .from("stanspace-images")
+        .createSignedUrl(profile.avatar_url,3600);
+
+      if(!imageError&&imageData){
+        profile.avatarDisplayUrl=imageData.signedUrl;
+      }
+    }
+  }
+
+  const {data:members,error:memberError}=await db.from("user_fandoms")
+    .select("fandom_id,fandoms(name)")
+    .eq("user_id",user.id);
+
+  if(memberError){
+    toast("Could not load your fandoms.");
+    return;
+  }
+
+  myFandoms=(members||[])
+    .map(x=>x.fandoms?.name)
+    .filter(Boolean);
+
+  await Promise.all([
+    loadPosts(),
+    loadRelationships(),
+    loadNotifications()
+  ]);
+
+  await loadUnreadMessages();
+
+  render();
 }
 
+
 async function loadPosts(){
-const {data,error}=await db.from("posts").select("*,profiles(username,display_name,avatar_url),fandoms(name)").order("created_at",{ascending:false}).limit(100);
-if(error){toast("Could not load posts: "+error.message);posts=[];return}
-posts=data||[];
-for(const post of posts){
-post.imageDisplayUrl=null;
-if(post.image_url){
-const {data:imageData,error:imageError}=await db.storage.from("stanspace-images").createSignedUrl(post.image_url,3600);
-if(!imageError&&imageData)post.imageDisplayUrl=imageData.signedUrl;
-}}
-if(posts.length){
-const ids=posts.map(p=>p.id);
-const [l,c]=await Promise.all([
-db.from("likes").select("post_id,user_id").in("post_id",ids),
-db.from("comments").select("id,post_id,user_id,content,created_at,profiles(username,display_name,avatar_url)").in("post_id",ids).order("created_at")
-]);
-likes=l.data||[];comments=c.data||[];
-}else{likes=[];comments=[]}
+  const {data,error}=await db.from("posts")
+    .select("*,profiles(username,display_name,avatar_url),fandoms(name)")
+    .order("created_at",{ascending:false})
+    .limit(100);
+
+  if(error){
+    toast("Could not load posts: "+error.message);
+    posts=[];
+    return;
+  }
+
+  posts=data||[];
+
+  // Generate signed URLs for post images and author pictures
+  for(const post of posts){
+    post.imageDisplayUrl=null;
+
+    if(post.image_url){
+      const {data:imageData,error:imageError}=await db.storage
+        .from("stanspace-images")
+        .createSignedUrl(post.image_url,3600);
+
+      if(!imageError&&imageData){
+        post.imageDisplayUrl=imageData.signedUrl;
+      }
+    }
+
+    const authorProfile=post.profiles;
+
+    if(authorProfile){
+      authorProfile.avatarDisplayUrl=null;
+
+      if(authorProfile.avatar_url){
+        if(authorProfile.avatar_url.startsWith("http")){
+          authorProfile.avatarDisplayUrl=authorProfile.avatar_url;
+        }else{
+          const {data:imageData,error:imageError}=await db.storage
+            .from("stanspace-images")
+            .createSignedUrl(authorProfile.avatar_url,3600);
+
+          if(!imageError&&imageData){
+            authorProfile.avatarDisplayUrl=imageData.signedUrl;
+          }
+        }
+      }
+    }
+  }
+
+  if(posts.length){
+    const ids=posts.map(p=>p.id);
+
+    const [l,c]=await Promise.all([
+      db.from("likes")
+        .select("post_id,user_id")
+        .in("post_id",ids),
+
+      db.from("comments")
+        .select("id,post_id,user_id,content,created_at,profiles(username,display_name,avatar_url)")
+        .in("post_id",ids)
+        .order("created_at")
+    ]);
+
+    likes=l.data||[];
+    comments=c.data||[];
+
+    // Generate signed URLs for commenter pictures
+    for(const comment of comments){
+      const commenterProfile=comment.profiles;
+
+      if(!commenterProfile)continue;
+
+      commenterProfile.avatarDisplayUrl=null;
+
+      if(commenterProfile.avatar_url){
+        if(commenterProfile.avatar_url.startsWith("http")){
+          commenterProfile.avatarDisplayUrl=commenterProfile.avatar_url;
+        }else{
+          const {data:imageData,error:imageError}=await db.storage
+            .from("stanspace-images")
+            .createSignedUrl(commenterProfile.avatar_url,3600);
+
+          if(!imageError&&imageData){
+            commenterProfile.avatarDisplayUrl=imageData.signedUrl;
+          }
+        }
+      }
+    }
+
+  }else{
+    likes=[];
+    comments=[];
+  }
 }
 async function loadRelationships(){
 const {data,error}=await db.from("follows").select("follower_id,following_id,created_at");
@@ -872,7 +1006,7 @@ const liked=likes.some(x=>x.post_id===post.id&&x.user_id===currentUser.id);
 const postComments=comments.filter(c=>c.post_id===post.id);
 return `<article class="card" id="post-${post.id}">
 <div class="post-head">
-<div class="clickable" onclick="openUserProfile('${post.user_id}')">${avatar(author)}</div>
+<div class="clickable" onclick="openUserProfile('${post.user_id}')">${avatar(author,post.profiles?.avatarDisplayUrl)}</div>
 <div style="flex:1">
 <div class="post-name" onclick="openUserProfile('${post.user_id}')">${esc(author)}</div>
 <div class="post-meta">@${esc(username)} · ${formatDate(post.created_at)}</div>
@@ -891,7 +1025,7 @@ ${postComments.map(c=>{
 const commenter=c.profiles?.display_name||c.profiles?.username||"K-pop fan";
 return `<div class="comment">
 <div class="comment-person">
-<div class="clickable" onclick="openUserProfile('${c.user_id}')">${avatar(commenter)}</div>
+<div class="clickable" onclick="openUserProfile('${c.user_id}')">${avatar(commenter,c.profiles?.avatarDisplayUrl)}</div>
 <div><b onclick="openUserProfile('${c.user_id}')">${esc(commenter)}</b>
 <div class="post-meta">@${esc(c.profiles?.username||"fan")} · ${formatDate(c.created_at)}</div></div>
 </div>
@@ -1035,46 +1169,226 @@ results.innerHTML=unique.map(p=>`
 }
 
 // FOLLOWERS AND FOLLOWING
-function followerCount(userId){return relationships.filter(x=>x.following_id===userId).length}
-function followingCount(userId){return relationships.filter(x=>x.follower_id===userId).length}
-function amFollowing(userId){return relationships.some(x=>x.follower_id===currentUser.id&&x.following_id===userId)}
-function followsMe(userId){return relationships.some(x=>x.follower_id===userId&&x.following_id===currentUser.id)}
+
+function followerCount(userId){
+  return relationships.filter(
+    x=>x.following_id===userId
+  ).length;
+}
+
+function followingCount(userId){
+  return relationships.filter(
+    x=>x.follower_id===userId
+  ).length;
+}
+
+function amFollowing(userId){
+  return relationships.some(
+    x=>x.follower_id===currentUser.id &&
+       x.following_id===userId
+  );
+}
+
+function followsMe(userId){
+  return relationships.some(
+    x=>x.follower_id===userId &&
+       x.following_id===currentUser.id
+  );
+}
+
+function isMutualFollower(userId){
+  return amFollowing(userId) && followsMe(userId);
+}
+
+
+// OPEN USER PROFILE
 
 async function openUserProfile(userId){
-if(userId===currentUser.id){viewedProfile=null;currentPage="profile";renderProfile();return}
-const {data:p,error}=await db.from("profiles").select("*").eq("id",userId).single();
-if(error||!p){toast("Could not find this profile.");return}
-viewedProfile=p;currentPage="profile";renderProfile();
+
+  if(userId===currentUser.id){
+    viewedProfile=null;
+    currentPage="profile";
+    renderProfile();
+    return;
+  }
+
+  const {data:p,error}=await db.from("profiles")
+    .select("*")
+    .eq("id",userId)
+    .single();
+
+  if(error || !p){
+    toast("Could not find this profile.");
+    return;
+  }
+
+  p.avatarDisplayUrl=null;
+
+  if(p.avatar_url){
+
+    if(p.avatar_url.startsWith("http")){
+      p.avatarDisplayUrl=p.avatar_url;
+
+    }else{
+      const {data:imageData,error:imageError}=await db.storage
+        .from("stanspace-images")
+        .createSignedUrl(p.avatar_url,3600);
+
+      if(!imageError && imageData){
+        p.avatarDisplayUrl=imageData.signedUrl;
+      }
+    }
+  }
+
+  viewedProfile=p;
+  currentPage="profile";
+  renderProfile();
 }
+
+
+// FOLLOW / UNFOLLOW
+
 async function toggleFollow(userId){
-if(userId===currentUser.id)return;
-const following=amFollowing(userId);
-const result=following?
-await db.from("follows").delete().eq("follower_id",currentUser.id).eq("following_id",userId):
-await db.from("follows").insert({follower_id:currentUser.id,following_id:userId});
-if(result.error){toast("Could not update follow: "+result.error.message);return}
-await loadRelationships();
-if(!following)await loadNotifications();
-toast(following?"Unfollowed.":"Following ♡");
-renderProfile();updateNotificationBadges();
+
+  if(!currentUser || userId===currentUser.id)return;
+
+  const following=amFollowing(userId);
+
+  const result=following
+    ? await db.from("follows")
+        .delete()
+        .eq("follower_id",currentUser.id)
+        .eq("following_id",userId)
+
+    : await db.from("follows")
+        .insert({
+          follower_id:currentUser.id,
+          following_id:userId
+        });
+
+  if(result.error){
+    toast("Could not update follow: "+result.error.message);
+    return;
+  }
+
+  await loadRelationships();
+
+  if(!following){
+    await loadNotifications();
+  }
+
+  toast(following?"Unfollowed.":"Following ♡");
+
+  renderProfile();
+  updateNotificationBadges();
 }
+
+
+// FOLLOWERS / FOLLOWING LIST
+
 async function showFollowList(userId,type){
-const isFollowers=type==="followers",rows=relationships.filter(x=>isFollowers?x.following_id===userId:x.follower_id===userId);
-const ids=rows.map(x=>isFollowers?x.follower_id:x.following_id);
-if(!ids.length){
-$("modalRoot").innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal"><h2>${isFollowers?"Followers":"Following"}</h2><div class="empty">No ${type} yet ♡</div><button class="btn secondary" onclick="closeModal()">Close</button></div></div>`;return;
-}
-const {data:people,error}=await db.from("profiles").select("id,username,display_name").in("id",ids);
-if(error){toast("Could not load people: "+error.message);return}
-const ordered=ids.map(id=>people.find(p=>p.id===id)).filter(Boolean);
-$("modalRoot").innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">
-<h2>${isFollowers?"Followers":"Following"} ♡</h2>
-${ordered.map(p=>`<div class="settings-row">
-<div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="closeModal();openUserProfile('${p.id}')">
-${avatar(p.display_name)}<div><b>${esc(p.display_name||p.username)}</b><div class="sub">@${esc(p.username)}</div></div>
-</div></div>`).join("")}
-<button class="btn secondary" style="margin-top:12px" onclick="closeModal()">Close</button>
-</div></div>`;
+
+  const isFollowers=type==="followers";
+
+  const rows=relationships.filter(x=>
+    isFollowers
+      ? x.following_id===userId
+      : x.follower_id===userId
+  );
+
+  const ids=rows.map(x=>
+    isFollowers
+      ? x.follower_id
+      : x.following_id
+  );
+
+  if(!ids.length){
+
+    $("modalRoot").innerHTML=`
+      <div class="modal-back"
+        onclick="if(event.target===this)closeModal()">
+
+        <div class="modal">
+          <h2>${isFollowers?"Followers":"Following"}</h2>
+
+          <div class="empty">No ${type} yet ♡</div>
+
+          <button class="btn secondary"
+            onclick="closeModal()">Close</button>
+        </div>
+      </div>`;
+
+    return;
+  }
+
+  const {data:people,error}=await db.from("profiles")
+    .select("id,username,display_name,avatar_url")
+    .in("id",ids);
+
+  if(error){
+    toast("Could not load people: "+error.message);
+    return;
+  }
+
+  // Preserve the original relationship order
+  const ordered=ids
+    .map(id=>people.find(p=>p.id===id))
+    .filter(Boolean);
+
+  // Generate signed profile picture URLs
+  for(const person of ordered){
+
+    person.avatarDisplayUrl=null;
+
+    if(!person.avatar_url)continue;
+
+    if(person.avatar_url.startsWith("http")){
+      person.avatarDisplayUrl=person.avatar_url;
+      continue;
+    }
+
+    const {data:imageData,error:imageError}=await db.storage
+      .from("stanspace-images")
+      .createSignedUrl(person.avatar_url,3600);
+
+    if(!imageError && imageData){
+      person.avatarDisplayUrl=imageData.signedUrl;
+    }
+  }
+
+  $("modalRoot").innerHTML=`
+    <div class="modal-back"
+      onclick="if(event.target===this)closeModal()">
+
+      <div class="modal">
+
+        <h2>${isFollowers?"Followers":"Following"} ♡</h2>
+
+        ${ordered.map(p=>`
+          <div class="settings-row">
+
+            <div
+              style="display:flex;align-items:center;gap:10px;cursor:pointer"
+              onclick="closeModal();openUserProfile('${p.id}')">
+
+              ${avatar(p.display_name||p.username,p.avatarDisplayUrl)}
+
+              <div>
+                <b>${esc(p.display_name||p.username)}</b>
+                <div class="sub">@${esc(p.username)}</div>
+              </div>
+
+            </div>
+
+          </div>
+        `).join("")}
+
+        <button class="btn secondary"
+          style="margin-top:12px"
+          onclick="closeModal()">Close</button>
+
+      </div>
+    </div>`;
 }
 
 // PROFILE
@@ -1088,8 +1402,7 @@ const otherFollows=own?false:followsMe(p.id);
 $("pageContent").innerHTML=`
 <div class="card" style="padding:0;overflow:hidden">
 <div class="profile-cover"></div><div class="profile-card">
-<div class="profile-top">${avatar(p.display_name)}
-${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</button>`:`
+<div class="profile-top">${avatar(p.display_name,p.avatarDisplayUrl)}${own?`<button class="btn secondary" onclick="editProfile()">Edit profile</button>`:`
 <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">
 <button class="btn ${followingMe?"secondary":""}" onclick="toggleFollow('${p.id}')">${followingMe?"Following · Unfollow":"Follow ♡"}</button>
 ${mutual?`<button class="btn" onclick="openConversation('${p.id}')">✉ Message</button>`:`<button class="btn secondary" disabled title="You must follow each other to message">✉ Message locked</button>`}
@@ -1180,26 +1493,141 @@ async function renderNotifications(){
       }
     </div>
   `;
-}// EDIT PROFILE
-function editProfile(){
-$("modalRoot").innerHTML=`
-<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">
-<h2>Edit profile ♡</h2><p>Make your little corner yours.</p>
-<label class="label">Display name</label><input class="field" id="editDisplay" maxlength="40" value="${esc(profile.display_name||"")}">
-<label class="label">Country</label><input class="field" id="editCountry" value="${esc(profile.country||"")}">
-<label class="label">Bio</label><textarea class="field" id="editBio" maxlength="250" rows="4">${esc(profile.bio||"")}</textarea>
-<div style="display:flex;gap:8px;justify-content:flex-end">
-<button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" onclick="saveProfile()">Save changes</button>
-</div></div></div>`;
 }
-async function saveProfile(){
-const updates={display_name:$("editDisplay").value.trim(),country:$("editCountry").value.trim(),bio:$("editBio").value.trim()};
-if(!updates.display_name){toast("Display name cannot be empty.");return}
-const {error}=await db.from("profiles").update(updates).eq("id",currentUser.id);
-if(error){toast(error.message);return}
-profile={...profile,...updates};closeModal();renderProfile();toast("Profile updated ♡");
+// EDIT PROFILE
+
+function editProfile(){
+  $("modalRoot").innerHTML=`
+  <div class="modal-back" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <h2>Edit profile ♡</h2>
+      <p>Make your little corner yours.</p>
+
+      <div style="text-align:center;margin:15px 0">
+        ${avatar(profile.display_name,profile.avatarDisplayUrl)}
+        <label class="label" style="display:block;margin-top:12px">Profile picture</label>
+        <input class="field" type="file" id="editAvatar" accept="image/*">
+        <div class="sub">Choose an image. Maximum size: 5 MB.</div>
+      </div>
+
+      <label class="label">Display name</label>
+      <input class="field" id="editDisplay" maxlength="40"
+        value="${esc(profile.display_name||"")}">
+
+      <label class="label">Country</label>
+      <input class="field" id="editCountry"
+        value="${esc(profile.country||"")}">
+
+      <label class="label">Bio</label>
+      <textarea class="field" id="editBio" maxlength="250" rows="4">${esc(profile.bio||"")}</textarea>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn secondary" onclick="closeModal()">Cancel</button>
+        <button class="btn" id="saveProfileButton" onclick="saveProfile()">Save changes</button>
+      </div>
+    </div>
+  </div>`;
 }
 
+async function saveProfile(){
+  const updates={
+    display_name:$("editDisplay").value.trim(),
+    country:$("editCountry").value.trim(),
+    bio:$("editBio").value.trim()
+  };
+
+  const file=$("editAvatar")?.files?.[0];
+  let newAvatarPath=null;
+
+  if(!updates.display_name){
+    toast("Display name cannot be empty.");
+    return;
+  }
+
+  if(file){
+    if(!file.type.startsWith("image/")){
+      toast("Please select an image file.");
+      return;
+    }
+
+    if(file.size>5*1024*1024){
+      toast("Image must be smaller than 5 MB.");
+      return;
+    }
+  }
+
+  const button=$("saveProfileButton");
+  if(button){
+    button.disabled=true;
+    button.textContent="Saving...";
+  }
+
+  try{
+    if(file){
+      const extension=file.name.split(".").pop()
+        .toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+
+      newAvatarPath=
+        `${currentUser.id}/avatars/${crypto.randomUUID()}.${extension}`;
+
+      const {error:uploadError}=await db.storage
+        .from("stanspace-images")
+        .upload(newAvatarPath,file,{
+          contentType:file.type,
+          upsert:false
+        });
+
+      if(uploadError)throw uploadError;
+
+      updates.avatar_url=newAvatarPath;
+    }
+
+    const {error}=await db.from("profiles")
+      .update(updates)
+      .eq("id",currentUser.id);
+
+    if(error)throw error;
+
+    const oldAvatarPath=profile.avatar_url;
+
+    profile={...profile,...updates};
+
+    if(file){
+      const {data:imageData,error:signedUrlError}=await db.storage
+  .from("stanspace-images")
+  .createSignedUrl(newAvatarPath,3600);
+
+if(signedUrlError){
+  console.error("AVATAR SIGNED URL ERROR:",signedUrlError);
+  toast("Picture uploaded but could not display: "+signedUrlError.message);
+  profile.avatarDisplayUrl=null;
+}else{
+  profile.avatarDisplayUrl=imageData?.signedUrl||null;
+}
+      if(oldAvatarPath && !oldAvatarPath.startsWith("http")){
+        await db.storage.from("stanspace-images")
+          .remove([oldAvatarPath]);
+      }
+    }
+
+    closeModal();
+    renderProfile();
+    toast("Profile updated ♡");
+
+  }catch(error){
+    if(newAvatarPath){
+      await db.storage.from("stanspace-images")
+        .remove([newAvatarPath]);
+    }
+
+    toast("Could not update profile: "+error.message);
+
+    if(button){
+      button.disabled=false;
+      button.textContent="Save changes";
+    }
+  }
+}
 // SETTINGS
 function renderSettings(){
 $("pageContent").innerHTML=`
