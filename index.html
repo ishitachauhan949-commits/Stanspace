@@ -657,8 +657,8 @@ async function loadApp(){
     }
 
     if(!founderFollow){
-      renderFounderGate();
-      return;
+      await renderFounderGate();
+return;
     }
   }
 
@@ -685,7 +685,20 @@ async function loadApp(){
 
   render();
 }
-function renderFounderGate(){
+
+async function renderFounderGate(){
+
+  const founderId="2c7a96a7-24ea-4eac-9988-8edfba7f5899";
+
+  const {data:founder}=await db
+    .from("profiles")
+    .select("display_name,username")
+    .eq("id",founderId)
+    .maybeSingle();
+
+  const founderName=founder?.display_name || "STANSPACE";
+  const founderUsername=founder?.username || "stanspace";
+
   $("app").innerHTML=`
     <div style="
       min-height:100vh;
@@ -704,15 +717,20 @@ function renderFounderGate(){
 
         <p class="sub">
           Before entering our little community,
-          meet the person who created it.
+          meet the person behind it.
         </p>
 
         <div style="margin:28px 0 14px">
-          ${avatar("Ishita")}
+          ${avatar("STANSPACE")}
         </div>
-        <h2 style="margin:8px 0">Ishita ♡</h2>
 
-        <p class="sub">@ishi0q · Founder of STANSPACE</p>
+        <h2 style="margin:8px 0">
+          ${esc(founderName)} ♡
+        </h2>
+
+        <p class="sub">
+          @${esc(founderUsername)} · Founder of STANSPACE
+        </p>
 
         <p style="margin:22px 0">
           A space built out of love for fandoms,
@@ -726,17 +744,16 @@ function renderFounderGate(){
           onclick="followFounder()"
           style="width:100%;margin-top:12px"
         >
-          ♡ Follow @ishi0q to continue
+          ♡ Follow @${esc(founderUsername)} to continue
         </button>
 
         <p class="sub" style="margin-top:16px;font-size:12px">
-          Follow the founder to unlock your STANSPACE experience.
+          Follow STANSPACE to unlock your community experience.
         </p>
       </div>
     </div>
   `;
 }
-
 async function followFounder(){
 
   const button=$("founderFollowButton");
@@ -765,7 +782,7 @@ async function followFounder(){
     toast("Could not check follow status: "+checkError.message);
     if(button){
       button.disabled=false;
-      button.textContent="♡ Follow @ishi0q to continue";
+      button.textContent="♡ Follow @stanspace to continue";
     }
     return;
   }
@@ -787,7 +804,7 @@ async function followFounder(){
       toast("Could not update follow: "+deleteError.message);
       if(button){
         button.disabled=false;
-        button.textContent="♡ Follow @ishi0q to continue";
+        button.textContent="♡ Follow @stanspace to continue";
       }
       return;
     }
@@ -804,12 +821,12 @@ async function followFounder(){
     toast("Could not follow the founder: "+error.message);
     if(button){
       button.disabled=false;
-      button.textContent="♡ Follow @ishi0q to continue";
+      button.textContent="♡ Follow @stanspace to continue";
     }
     return;
   }
 
-  toast("You're now following @ishi0q! ♡");
+  toast("You're now following @stanspace! ♡");
   await loadApp();
 }
 
